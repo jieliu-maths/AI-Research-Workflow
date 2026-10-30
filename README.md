@@ -3,6 +3,7 @@
 **AI4Math-first research workflows with explicit evidence, independent review,
 and human-approved mathematical state.**
 
+[Project & interactive demo](https://jieliu-maths.github.io/ai-research-workflow/) ·
 [简体中文](README.zh-CN.md) · [Quickstart](#quickstart) ·
 [Landscape review](docs/landscape-review.en.md) · [AI4S experimental profile](profiles/ai4s/README.md) ·
 [MIT License](LICENSE)

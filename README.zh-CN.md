@@ -2,6 +2,7 @@
 
 **以 AI4Math 为核心，用明确证据、独立审查和人工批准推进长期数学研究。**
 
+[项目展示与交互演示](https://jieliu-maths.github.io/ai-research-workflow/) ·
 [English](README.md) · [调研与比较](docs/landscape-review.zh-CN.md) ·
 [AI4S 试验版](profiles/ai4s/README.md) · [MIT 许可证](LICENSE)
 

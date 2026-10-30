@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.1",
+  "run_id": "R000",
+  "route_id": null,
+  "state_in": "S0",
+  "status": "planned",
+  "brief": {"path": "runs/R000/brief.md", "sha256": null},
+  "route_approval_reference": "proposal-only",
+  "task_records": [],
+  "director_summary": null,
+  "state_transition": null,
+  "orchestration": {"path": "runs/R000/orchestration.json"},
+  "route_signal": "not_assessed",
+  "route_review": null
+}

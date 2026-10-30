@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "run_id": "R000",
+  "route_id": null,
+  "director_state": "idle",
+  "active_task_id": null,
+  "awaiting_role": null,
+  "last_completed_task_id": null,
+  "next_action": "await approved run brief",
+  "owner_gate": {
+    "required": true,
+    "reason": "run objective and any technical route require owner approval",
+    "approval_reference": null
+  },
+  "processed_return_keys": [],
+  "updated_at": null
+}

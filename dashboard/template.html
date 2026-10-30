@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="research-dashboard-version" content="2.1-mathematical-bilingual">
+  <title>Mathematical Research Overview</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: light-dark(#f5f5f1, #111310);
+      --surface: light-dark(#ffffff, #1a1d19);
+      --surface-2: light-dark(#ecece5, #232721);
+      --text: light-dark(#1b211b, #edf1ea);
+      --muted: light-dark(#667064, #a7b1a3);
+      --line: light-dark(#d5d9d1, #343a32);
+      --green: light-dark(#2e6b46, #79c995);
+      --amber: light-dark(#8a5a08, #e6b85c);
+      --red: light-dark(#a13b32, #ef8b80);
+      --blue: light-dark(#315f8c, #83b8e6);
+      --purple: light-dark(#76518e, #c2a0dd);
+      --shadow: 0 12px 38px light-dark(#26332612, #00000038);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.45;
+    }
+    button { font: inherit; }
+    .shell { max-width: 1440px; margin: 0 auto; padding: 28px; }
+    header { display: flex; gap: 24px; justify-content: space-between; align-items: flex-end; }
+    .eyebrow { color: var(--green); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    h1 { margin: 5px 0 2px; font-size: clamp(26px, 4vw, 42px); line-height: 1.05; letter-spacing: -.035em; }
+    .subtitle { margin: 0; color: var(--muted); max-width: 760px; }
+    .header-tools { display: grid; justify-items: end; gap: 9px; }
+    .generated { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .language-switch {
+      display: inline-flex; gap: 3px; padding: 3px; border: 1px solid var(--line);
+      border-radius: 10px; background: var(--surface); box-shadow: var(--shadow);
+    }
+    .lang-button {
+      border: 0; border-radius: 7px; padding: 6px 10px; cursor: pointer;
+      background: transparent; color: var(--muted); font-size: 12px;
+    }
+    .lang-button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); font-weight: 700; }
+    .lang-button:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 24px 0 18px; }
+    .metric { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 15px 17px; box-shadow: var(--shadow); }
+    .metric-label { color: var(--muted); font-size: 12px; }
+    .metric-value { margin-top: 3px; font-size: 25px; font-weight: 700; letter-spacing: -.025em; }
+    .metric-value.route-name { font-size: 17px; line-height: 1.3; letter-spacing: -.01em; }
+    .metric-note { margin-top: 2px; color: var(--muted); font-size: 12px; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
+    .tab {
+      border: 1px solid transparent; background: transparent; color: var(--muted);
+      padding: 8px 12px; border-radius: 9px; cursor: pointer;
+    }
+    .tab[aria-selected="true"] { background: var(--surface); border-color: var(--line); color: var(--text); }
+    .panel[hidden] { display: none; }
+    .split { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, .65fr); gap: 16px; align-items: start; }
+    .surface { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+    .surface-head { padding: 16px 18px 10px; display: flex; justify-content: space-between; gap: 14px; align-items: baseline; }
+    .surface-head h2 { margin: 0; font-size: 16px; }
+    .surface-head p { margin: 0; color: var(--muted); font-size: 12px; }
+    .graph-wrap { position: relative; min-height: 690px; padding: 8px 18px 22px; overflow: hidden; }
+    #edge-layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .lanes { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 12px; }
+    .lane-title { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin: 5px 3px 10px; }
+    .node {
+      width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface-2); color: var(--text);
+      border-radius: 11px; padding: 10px 11px; margin-bottom: 12px; cursor: pointer; position: relative;
+    }
+    .node:hover, .node:focus-visible, .node.selected { border-color: var(--blue); outline: none; }
+    .node-id { font-size: 12px; font-weight: 800; }
+    .node-title { margin-top: 2px; font-size: 12px; }
+    .node-status { margin-top: 5px; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+    .node.blocking::after { content: ""; position: absolute; width: 7px; height: 7px; border-radius: 50%; right: 9px; top: 10px; background: var(--red); }
+    .node[data-status="formal_exact"], .node[data-status="established"] { border-left: 3px solid var(--green); }
+    .node[data-status="conditional"], .node[data-status="formal"], .node[data-status="conjectural"] { border-left: 3px solid var(--amber); }
+    .node[data-status="open"] { border-left: 3px solid var(--red); }
+    .node[data-status="external_input"] { border-left: 3px solid var(--purple); }
+    .node[data-status="manuscript_unaudited"], .node[data-status="selected_unverified"] { border-left: 3px solid var(--blue); }
+    .detail { padding: 18px; position: sticky; top: 16px; }
+    .detail-kicker { color: var(--blue); font-size: 12px; font-weight: 700; }
+    .detail h3 { margin: 5px 0 7px; font-size: 21px; line-height: 1.2; }
+    .detail p { color: var(--muted); font-size: 13px; }
+    .detail dl { margin: 16px 0 0; display: grid; grid-template-columns: 96px 1fr; gap: 8px; font-size: 12px; }
+    .detail dt { color: var(--muted); }
+    .detail dd { margin: 0; }
+    .route-list { display: grid; gap: 10px; padding: 0 18px 18px; }
+    .route {
+      border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: 11px;
+      background: var(--surface-2); padding: 13px 14px; cursor: pointer;
+    }
+    .route.pending { border-left-color: var(--amber); }
+    .route-top { display: flex; justify-content: space-between; gap: 12px; }
+    .route-id { font-weight: 800; }
+    .route-state { color: var(--muted); font-size: 11px; }
+    .route-title { margin-top: 3px; font-size: 14px; }
+    .route-scope { margin-top: 5px; color: var(--muted); font-size: 12px; }
+    .notice { margin: 0 18px 18px; padding: 12px 14px; border-radius: 10px; background: color-mix(in srgb, var(--amber) 12%, transparent); color: var(--text); font-size: 12px; }
+    .table-wrap { overflow-x: auto; padding: 0 18px 18px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { text-align: left; padding: 10px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    .status { font-weight: 700; }
+    .status.open { color: var(--red); }
+    .status.conditional, .status.formal, .status.conjectural { color: var(--amber); }
+    .status.formal_exact, .status.established { color: var(--green); }
+    .status.external_input { color: var(--purple); }
+    .validation { padding: 0 18px 18px; }
+    .validation-row { display: grid; grid-template-columns: 100px minmax(260px, 1fr) minmax(130px, auto); gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+    .validation-row details { color: var(--muted); }
+    .validation-row summary { cursor: pointer; }
+    .validation-row details p { margin: 7px 0 0; max-width: 760px; }
+    .severity-warning { color: var(--amber); font-weight: 700; }
+    .severity-error { color: var(--red); font-weight: 700; }
+    .ok { color: var(--green); font-weight: 700; }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; color: var(--muted); font-size: 11px; padding: 0 18px 15px; }
+    .legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; margin-right: 5px; }
+    .legend .lg-open { color: var(--red); }
+    .legend .lg-conditional { color: var(--amber); }
+    .legend .lg-exact { color: var(--green); }
+    .legend .lg-external { color: var(--purple); }
+    .footer { color: var(--muted); font-size: 11px; margin: 14px 2px 0; }
+    @media (max-width: 900px) {
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .split { grid-template-columns: 1fr; }
+      .detail { position: static; }
+      .lanes { grid-template-columns: repeat(2, minmax(130px, 1fr)); }
+      .graph-wrap { min-height: 1050px; }
+    }
+    @media (max-width: 560px) {
+      .shell { padding: 18px 12px; }
+      header { align-items: flex-start; flex-direction: column; }
+      .header-tools { justify-items: start; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .lanes { grid-template-columns: 1fr; }
+      .graph-wrap { min-height: 1700px; }
+      .validation-row { grid-template-columns: 78px 1fr; }
+      .validation-row details { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div>
+        <div class="eyebrow" id="mode-label">__MODE_LABEL__</div>
+        <h1 id="project-title">Mathematical Research Overview</h1>
+        <p class="subtitle" data-i18n="subtitle"></p>
+      </div>
+      <div class="header-tools">
+        <div class="language-switch" role="group" data-i18n-aria-label="languageSelector">
+          <button class="lang-button" type="button" data-language="zh" aria-pressed="false">中文</button>
+          <button class="lang-button" type="button" data-language="en" aria-pressed="false">English</button>
+        </div>
+        <div class="generated"><span data-i18n="generated"></span> <span id="generated-at">__GENERATED_AT__</span></div>
+      </div>
+    </header>
+
+    <section class="metrics" data-i18n-aria-label="projectSummary">
+      <div class="metric"><div class="metric-label" data-i18n="recentReview"></div><div class="metric-value" id="metric-state"></div><div class="metric-note" data-i18n="reviewedResultsOnly"></div></div>
+      <div class="metric"><div class="metric-label" data-i18n="activeResearchRoute"></div><div class="metric-value" id="metric-run"></div><div class="metric-note" id="metric-run-note"></div></div>
+      <div class="metric"><div class="metric-label" data-i18n="blockingClaims"></div><div class="metric-value" id="metric-blockers"></div><div class="metric-note" id="metric-blocker-note"></div></div>
+      <div class="metric"><div class="metric-label" data-i18n="theoremTargets"></div><div class="metric-value" id="metric-validation"></div><div class="metric-note" id="metric-validation-note"></div></div>
+    </section>
+
+    <nav class="tabs" data-i18n-aria-label="dashboardViews">
+      <button class="tab" type="button" aria-selected="true" data-panel="proof-panel" data-i18n="proofMap"></button>
+      <button class="tab" type="button" aria-selected="false" data-panel="routes-panel" data-i18n="routeHistory"></button>
+      <button class="tab" type="button" aria-selected="false" data-panel="claims-panel" data-i18n="allClaims"></button>
+      <button class="tab" type="button" aria-selected="false" data-panel="validation-panel" data-i18n="recordReview"></button>
+    </nav>
+
+    <section class="panel" id="proof-panel">
+      <div class="split">
+        <div class="surface">
+          <div class="surface-head"><div><h2 data-i18n="proofDependencyMap"></h2><p data-i18n="arrowExplanation"></p></div></div>
+          <div class="legend"><span class="lg-open" data-i18n="openBlocker"></span><span class="lg-conditional" data-i18n="conditional"></span><span class="lg-exact" data-i18n="formalExact"></span><span class="lg-external" data-i18n="externalInput"></span></div>
+          <div class="graph-wrap" id="graph-wrap">
+            <svg id="edge-layer" aria-hidden="true"></svg>
+            <div class="lanes" id="lanes"></div>
+          </div>
+        </div>
+        <aside class="surface detail" id="claim-detail" aria-live="polite"></aside>
+      </div>
+    </section>
+
+    <section class="panel" id="routes-panel" hidden>
+      <div class="surface">
+        <div class="surface-head"><div><h2 data-i18n="crossRunRouteHistory"></h2><p data-i18n="rejectionScopeReminder"></p></div></div>
+        <div class="notice" id="route-notice"></div>
+        <div class="route-list" id="route-list"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="claims-panel" hidden>
+      <div class="surface">
+        <div class="surface-head"><div><h2 data-i18n="claimLedgerMirror"></h2><p data-i18n="canonicalAuthority"></p></div></div>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th data-i18n="claim"></th><th data-i18n="status"></th><th data-i18n="dependencies"></th><th data-i18n="proofRole"></th><th data-i18n="note"></th></tr></thead><tbody id="claims-body"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="panel" id="validation-panel" hidden>
+      <div class="surface">
+        <div class="surface-head"><div><h2 data-i18n="recordReview"></h2><p data-i18n="checkDescription"></p></div></div>
+        <div class="validation" id="validation-list"></div>
+      </div>
+    </section>
+    <p class="footer" data-i18n="contentLanguageNote"></p>
+  </main>
+
+  <script id="research-state" type="application/json">__STATE_JSON__</script>
+  <script id="validation-state" type="application/json">__VALIDATION_JSON__</script>
+  <script>
+    const state = JSON.parse(document.getElementById('research-state').textContent);
+    const issues = JSON.parse(document.getElementById('validation-state').textContent);
+    const claims = new Map(state.claims.map(claim => [claim.id, claim]));
+    const activeRoute = state.routes.find(route => route.id === state.snapshot.active_route);
+    const activeRun = (state.runs || []).find(run => run.id === state.snapshot.active_run);
+    const projectName = state.snapshot.project_name || 'Research Project';
+    const rawModeLabel = document.getElementById('mode-label').textContent;
+    const proposalMode = rawModeLabel.includes('NOT CANONICAL');
+    const storageKey = 'research-dashboard-language';
+
+    const copy = {
+      en: {
+        researchControl: 'Mathematical Research Overview', canonicalDashboard: 'Reviewed mathematical record', proposalPreview: 'DRAFT MATHEMATICAL RECORD · AWAITING REVIEW',
+        subtitle: 'The theorem target, proof dependencies, precisely scoped route conclusions, remaining gaps, and mathematical decisions awaiting review. This page does not certify new results.',
+        generated: 'Page updated', languageSelector: 'Display language', projectSummary: 'Research summary', recentReview: 'Most recent mathematical review',
+        reviewedResultsOnly: 'Only reviewed mathematical conclusions are counted', activeResearchRoute: 'Current research route', blockingClaims: 'Key unresolved claims', theoremTargets: 'Theorem targets',
+        dashboardViews: 'Research views', proofMap: 'Proof structure', routeHistory: 'Research routes', allClaims: 'Claim overview', recordReview: 'Research-record review',
+        proofDependencyMap: 'Proof dependency map', arrowExplanation: 'Arrows run from prerequisite to dependent claim.',
+        openBlocker: 'unresolved prerequisite', conditional: 'conditional result', formalExact: 'exact in the stated formal model', externalInput: 'external theorem',
+        crossRunRouteHistory: 'History of research routes', rejectionScopeReminder: 'Ruling out one route does not disprove the claim it was designed to establish.',
+        claimLedgerMirror: 'Claims and their present mathematical standing', canonicalAuthority: 'Only conclusions accepted after mathematical review are presented as established.',
+        claim: 'Claim', status: 'Present mathematical standing', dependencies: 'Required premises', proofRole: 'Role in the proof', note: 'Mathematical note',
+        checkDescription: 'This section reports incomplete or mutually inconsistent research records. It does not assess whether a proof is mathematically correct.',
+        contentLanguageNote: 'Claims, formulas, route conclusions, and project notes are shown in their authored language.',
+        none: 'none', noSelectedRoute: 'no approved route', noActiveRun: 'No investigation is currently active', noApprovedRoute: 'Not yet selected',
+        currentInvestigation: 'Current investigation', keyStep: 'key premise', supportingStep: 'supporting step',
+        derivedAgainst: 'Required for', theoremTargetUnmapped: 'Marked as a key unresolved step in the present proof structure', theoremTargetsAwaitReview: 'The final theorem target has not yet been fixed',
+        noClaims: 'No mathematical claims have been entered yet.', group: 'Part of the argument', dependsOn: 'Requires', testedBy: 'Investigated through', noneRecorded: 'none recorded',
+        reviewedStanding: 'Reviewed route standing', researchOutcome: 'Result of the investigations', investigations: 'Investigations', noRoutes: 'No research routes have been entered yet.', conclusion: 'mathematical conclusion', preserved: 'Results that remain available',
+        recordsCoherent: 'No contradictions were found among the research records.', attention: 'needs attention', advisory: 'note', technicalDetails: 'Technical details',
+        targetCount: 'target', targetCountPlural: 'targets'
+      },
+      zh: {
+        researchControl: '数学研究进展', canonicalDashboard: '已审定的数学进展', proposalPreview: '数学进展草案 · 尚待审定',
+        subtitle: '展示定理目标、证明依赖、研究路线的精确结论、仍存缺口，以及需要研究者审定的数学判断。本页不会自行认定新的数学结果。',
+        generated: '页面更新时间', languageSelector: '显示语言', projectSummary: '研究进展摘要', recentReview: '最近一次数学审定',
+        reviewedResultsOnly: '这里只计入经过数学审定的结论', activeResearchRoute: '当前研究路线', blockingClaims: '关键未决命题', theoremTargets: '定理目标',
+        dashboardViews: '研究进展视图', proofMap: '证明结构', routeHistory: '研究路线', allClaims: '命题一览', recordReview: '研究记录检查',
+        proofDependencyMap: '证明依赖关系', arrowExplanation: '箭头由证明所需前提指向依赖该前提的命题。',
+        openBlocker: '尚未解决的关键前提', conditional: '条件性结论', formalExact: '在所述形式模型中精确', externalInput: '引用的外部定理',
+        crossRunRouteHistory: '研究路线及其结论', rejectionScopeReminder: '排除一条研究路线，并不等于否定它原本试图证明的命题。',
+        claimLedgerMirror: '命题及其当前数学地位', canonicalAuthority: '只有经过数学审定的结论才会被列为已经成立。',
+        claim: '命题', status: '当前数学地位', dependencies: '所需前提', proofRole: '在证明中的作用', note: '数学说明',
+        checkDescription: '这里只提示研究记录是否缺失或彼此矛盾，并不判断数学证明本身是否正确。',
+        contentLanguageNote: '命题、公式、路线结论与项目备注均保持原文。',
+        none: '无', noSelectedRoute: '尚无获准研究的路线', noActiveRun: '当前没有正在进行的研究', noApprovedRoute: '尚未选定',
+        currentInvestigation: '当前研究轮次', keyStep: '关键前提', supportingStep: '辅助环节',
+        derivedAgainst: '服务于', theoremTargetUnmapped: '在当前证明结构中被标记为关键未决环节', theoremTargetsAwaitReview: '最终定理目标尚待研究者确定',
+        noClaims: '尚未登记数学命题。', group: '所属论证部分', dependsOn: '需要先证明', testedBy: '由下列研究路线检验', noneRecorded: '尚无记录',
+        reviewedStanding: '路线的审定结论', researchOutcome: '各轮研究所得', investigations: '研究轮次', noRoutes: '尚未登记研究路线。', conclusion: '数学结论', preserved: '仍然有效的结果',
+        recordsCoherent: '各项研究记录之间未发现矛盾。', attention: '需要处理', advisory: '提示', technicalDetails: '技术详情',
+        targetCount: '个目标', targetCountPlural: '个目标'
+      }
+    };
+
+    const claimStatusCopy = {
+      en: {
+        open: 'unresolved', conditional: 'conditional result', conjectural: 'conjectural', formal: 'formal derivation, not yet a proof', external_input: 'external theorem',
+        formal_exact: 'exact in the stated formal model', established: 'proved', manuscript_unaudited: 'manuscript claim awaiting review', selected_unverified: 'selected target awaiting proof',
+        deferred: 'set aside for now', verified: 'verified', numerical: 'supported numerically only', rejected: 'disproved'
+      },
+      zh: {
+        open: '尚未解决', conditional: '在附加条件下成立', conjectural: '猜想', formal: '已有形式推导，但尚非严格证明', external_input: '引用的外部定理',
+        formal_exact: '在所述形式模型中精确成立', established: '已经证明', manuscript_unaudited: '论文中的陈述尚待审查', selected_unverified: '当前拟证明，尚未验证',
+        deferred: '暂缓研究', verified: '已经核验', numerical: '仅有数值证据支持', rejected: '已经否证'
+      }
+    };
+
+    const reviewedRouteStatusCopy = {
+      en: { proposed: 'under consideration', active: 'approved for investigation', closed: 'concluded', rejected: 'set aside after review' },
+      zh: { proposed: '正在比较，尚未选定', active: '已获准研究', closed: '已经形成结论', rejected: '经审定不再继续' }
+    };
+
+    const routeOutcomeStatusCopy = {
+      en: { planned: 'not yet investigated', running: 'under investigation', completed: 'investigation complete', rejected: 'the scoped candidate class was ruled out', gated: 'awaiting a mathematical decision' },
+      zh: { planned: '尚未开始研究', running: '正在研究', completed: '本轮研究已经完成', rejected: '本轮所研究的特定候选类已被排除', gated: '等待数学判断' }
+    };
+
+    const runStatusCopy = {
+      en: { planned: 'planned', running: 'in progress', gated: 'awaiting a mathematical decision', completed: 'complete', aborted: 'stopped', rejected: 'the scoped approach was ruled out' },
+      zh: { planned: '已安排', running: '正在进行', gated: '等待数学判断', completed: '已经完成', aborted: '已经停止', rejected: '本轮所研究的特定方案已被排除' }
+    };
+
+    const issueCopy = {
+      en: { error: 'needs attention', warning: 'note' },
+      zh: { error: '需要处理', warning: '提示' }
+    };
+
+    const issueSummaryCopy = {
+      en: {
+        THEOREM_TARGET_UNMAPPED: 'The final theorem target has not yet been fixed, so the displayed key premises follow the current research notes rather than a complete dependency closure.',
+        LEGACY_RUN_NO_MANIFEST: 'An earlier investigation has not yet been incorporated into the present record format; its mathematical content is unchanged.',
+        MANIFEST_LEGACY_SCHEMA: 'An earlier investigation uses the previous record format; its mathematical content is unchanged.',
+        PENDING_CANONICAL_SYNC: 'A research conclusion is awaiting mathematical review before it can be added to the reviewed record.',
+        ROUTE_REVIEW_DUE: 'This route has not gained decisive support over several investigations; its evidence should be synthesized before further construction.',
+        ROUTE_REVIEW_BYPASSED: 'Further construction began before the required review of this route was completed.'
+      },
+      zh: {
+        THEOREM_TARGET_UNMAPPED: '最终定理目标尚未确定，因此这里列出的关键前提沿用当前研究记录，尚不是由完整证明链自动推导出的结果。',
+        LEGACY_RUN_NO_MANIFEST: '一轮早期研究尚未整理为当前采用的记录格式；其中已经保存的数学内容不受影响。',
+        MANIFEST_LEGACY_SCHEMA: '一轮早期研究仍采用旧的记录格式；其中已经保存的数学内容不受影响。',
+        PENDING_CANONICAL_SYNC: '一项研究结论尚待数学审定，因此还没有列入已审定的研究进展。',
+        ROUTE_REVIEW_DUE: '这条路线经过多轮研究仍未获得决定性支持，应先汇总正反证据，再决定是否继续。',
+        ROUTE_REVIEW_BYPASSED: '这条路线尚未完成必要的证据总结，就进入了下一轮构造。'
+      }
+    };
+
+    const groupCopy = {
+      zh: {
+        'external inputs': '外部定理输入', geometry: '几何分解', modulation: '调制分析', dynamics: '动力学',
+        'mass trapping': '质量约束', 'local virial': '局部维里恒等式', 'evidence integrity': '证据独立性',
+        'independent closure': '独立闭合机制', coercivity: '强制性', bootstrap: '自举闭合', 'phase II': '第二阶段'
+      }
+    };
+
+    let currentLanguage;
+    let selectedClaimId = null;
+    let selectedRouteId = null;
+    try {
+      currentLanguage = localStorage.getItem(storageKey);
+    } catch (_error) {
+      currentLanguage = null;
+    }
+    if (!['zh', 'en'].includes(currentLanguage)) {
+      currentLanguage = (navigator.language || '').toLowerCase().startsWith('zh') ? 'zh' : 'en';
+    }
+
+    function t(key) {
+      return copy[currentLanguage][key] || copy.en[key] || key;
+    }
+
+    function claimStatusLabel(value) {
+      return claimStatusCopy[currentLanguage][value] || String(value || '').replaceAll('_', ' ');
+    }
+
+    function reviewedRouteStatusLabel(value) {
+      return reviewedRouteStatusCopy[currentLanguage][value] || String(value || '').replaceAll('_', ' ');
+    }
+
+    function routeOutcomeStatusLabel(value) {
+      return routeOutcomeStatusCopy[currentLanguage][value] || String(value || '').replaceAll('_', ' ');
+    }
+
+    function runStatusLabel(value) {
+      return runStatusCopy[currentLanguage][value] || String(value || '').replaceAll('_', ' ');
+    }
+
+    function issueSeverityLabel(value) {
+      return issueCopy[currentLanguage][value] || value;
+    }
+
+    function issueSummary(issue) {
+      const exact = issueSummaryCopy[currentLanguage][issue.code];
+      if (exact) return exact;
+      if (/CLAIM|DEPENDENCY|EDGE|ROUTE/.test(issue.code)) {
+        return currentLanguage === 'zh'
+          ? '命题、证明前提或研究路线的记录存在需要澄清之处；在引用相关结论前应先审阅。'
+          : 'A claim, proof premise, or route record needs clarification before the related conclusion is used.';
+      }
+      return currentLanguage === 'zh'
+        ? '一项研究记录需要补充或澄清；这不自动改变任何数学结论。'
+        : 'A research record needs clarification or completion; this does not by itself change any mathematical conclusion.';
+    }
+
+    function groupLabel(value) {
+      return currentLanguage === 'zh' ? (groupCopy.zh[value] || value) : value;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      })[character]);
+    }
+
+    function countLabel(count, singular, plural) {
+      return currentLanguage === 'zh' ? `${count} ${t(plural)}` : `${count} ${t(count === 1 ? singular : plural)}`;
+    }
+
+    function renderStaticCopy() {
+      document.documentElement.lang = currentLanguage === 'zh' ? 'zh-CN' : 'en';
+      document.querySelectorAll('[data-i18n]').forEach(element => {
+        element.textContent = t(element.dataset.i18n);
+      });
+      document.querySelectorAll('[data-i18n-aria-label]').forEach(element => {
+        element.setAttribute('aria-label', t(element.dataset.i18nAriaLabel));
+      });
+      document.querySelectorAll('.lang-button').forEach(button => {
+        button.setAttribute('aria-pressed', String(button.dataset.language === currentLanguage));
+      });
+      document.getElementById('mode-label').textContent = proposalMode ? t('proposalPreview') : t('canonicalDashboard');
+      document.title = `${projectName} · ${t('researchControl')}`;
+      document.getElementById('project-title').textContent = `${projectName} · ${t('researchControl')}`;
+    }
+
+    function renderMetrics() {
+      document.getElementById('metric-state').textContent = state.snapshot.human_reviewed_at || t('none');
+      const routeMetric = document.getElementById('metric-run');
+      routeMetric.textContent = activeRoute ? activeRoute.title : t('noApprovedRoute');
+      routeMetric.className = 'metric-value route-name';
+      document.getElementById('metric-run-note').textContent = activeRun
+        ? `${t('currentInvestigation')} ${activeRun.id} · ${runStatusLabel(activeRun.status)}`
+        : t('noActiveRun');
+      document.getElementById('metric-blockers').textContent = state.claims.filter(claim => claim.blocking).length;
+      document.getElementById('metric-blocker-note').textContent = (state.snapshot.theorem_targets || []).length
+        ? `${t('derivedAgainst')}: ${state.snapshot.theorem_targets.join(', ')}`
+        : t('theoremTargetUnmapped');
+      const targets = state.snapshot.theorem_targets || [];
+      document.getElementById('metric-validation').textContent = targets.length
+        ? countLabel(targets.length, 'targetCount', 'targetCountPlural')
+        : t('none');
+      document.getElementById('metric-validation').className = 'metric-value';
+      document.getElementById('metric-validation-note').textContent = targets.length
+        ? targets.join(', ')
+        : t('theoremTargetsAwaitReview');
+    }
+
+    const laneSpecs = [];
+    const groupIndex = new Map();
+    state.claims.forEach(claim => {
+      if (!groupIndex.has(claim.group)) {
+        groupIndex.set(claim.group, []);
+        laneSpecs.push([claim.group, groupIndex.get(claim.group)]);
+      }
+      groupIndex.get(claim.group).push(claim.id);
+    });
+
+    function renderLanes() {
+      const lanes = document.getElementById('lanes');
+      lanes.replaceChildren();
+      laneSpecs.forEach(([title, ids]) => {
+        const lane = document.createElement('section');
+        lane.innerHTML = `<div class="lane-title">${escapeHtml(groupLabel(title))}</div>`;
+        ids.forEach(id => {
+          const claim = claims.get(id);
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = `node ${claim.blocking ? 'blocking' : ''} ${selectedClaimId === id ? 'selected' : ''}`;
+          button.dataset.claim = id;
+          button.dataset.status = claim.status;
+          button.innerHTML = `<div class="node-id">${escapeHtml(id)}</div><div class="node-title">${escapeHtml(claim.title)}</div><div class="node-status">${escapeHtml(claimStatusLabel(claim.status))}</div>`;
+          button.addEventListener('click', () => selectClaim(id));
+          lane.appendChild(button);
+        });
+        lanes.appendChild(lane);
+      });
+    }
+
+    function selectClaim(id) {
+      selectedClaimId = id;
+      const claim = claims.get(id);
+      if (!claim) {
+        document.getElementById('claim-detail').innerHTML = `<p>${escapeHtml(t('noClaims'))}</p>`;
+        return;
+      }
+      document.querySelectorAll('.node').forEach(node => node.classList.toggle('selected', node.dataset.claim === id));
+      const testedBy = state.routes.filter(route => route.target_claims.includes(id)).map(route => route.id);
+      document.getElementById('claim-detail').innerHTML = `
+        <div class="detail-kicker">${escapeHtml(claim.id)} · ${escapeHtml(claimStatusLabel(claim.status))}</div>
+        <h3>${escapeHtml(claim.title)}</h3>
+        <p>${escapeHtml(claim.note)}</p>
+        <dl>
+          <dt>${escapeHtml(t('group'))}</dt><dd>${escapeHtml(groupLabel(claim.group))}</dd>
+          <dt>${escapeHtml(t('proofRole'))}</dt><dd>${escapeHtml(claim.blocking ? t('keyStep') : t('supportingStep'))}</dd>
+          <dt>${escapeHtml(t('dependsOn'))}</dt><dd>${escapeHtml(claim.depends_on.join(', ') || t('none'))}</dd>
+          <dt>${escapeHtml(t('testedBy'))}</dt><dd>${escapeHtml(testedBy.join(', ') || t('noneRecorded'))}</dd>
+        </dl>`;
+    }
+
+    function drawEdges() {
+      const wrap = document.getElementById('graph-wrap');
+      const svg = document.getElementById('edge-layer');
+      const wrapRect = wrap.getBoundingClientRect();
+      svg.setAttribute('viewBox', `0 0 ${wrapRect.width} ${wrapRect.height}`);
+      svg.innerHTML = '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path></marker></defs>';
+      state.claims.forEach(claim => claim.depends_on.forEach(dependency => {
+        const from = document.querySelector(`[data-claim="${CSS.escape(dependency)}"]`);
+        const to = document.querySelector(`[data-claim="${CSS.escape(claim.id)}"]`);
+        if (!from || !to) return;
+        const a = from.getBoundingClientRect();
+        const b = to.getBoundingClientRect();
+        const x1 = a.right - wrapRect.left;
+        const y1 = a.top + a.height / 2 - wrapRect.top;
+        const x2 = b.left - wrapRect.left;
+        const y2 = b.top + b.height / 2 - wrapRect.top;
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        if (x2 <= x1) {
+          const bend = Math.max(x1, x2) + 10;
+          path.setAttribute('d', `M ${x1} ${y1} C ${bend} ${y1}, ${bend} ${y2}, ${x2} ${y2}`);
+        } else {
+          const middle = (x1 + x2) / 2;
+          path.setAttribute('d', `M ${x1} ${y1} C ${middle} ${y1}, ${middle} ${y2}, ${x2} ${y2}`);
+        }
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', 'currentColor');
+        path.setAttribute('stroke-opacity', '.25');
+        path.setAttribute('stroke-width', '1.2');
+        path.setAttribute('marker-end', 'url(#arrow)');
+        svg.appendChild(path);
+      }));
+    }
+
+    function renderRoutes() {
+      const routeList = document.getElementById('route-list');
+      routeList.replaceChildren();
+      state.routes.forEach(route => {
+        const pending = route.canonical_status === 'active' && ['completed', 'rejected'].includes(route.operational_status);
+        const item = document.createElement('article');
+        item.className = `route ${pending ? 'pending' : ''}`;
+        const runIds = (state.runs || []).filter(run => run.route_id === route.id).map(run => run.id);
+        item.innerHTML = `<div class="route-top"><span class="route-id">${escapeHtml(route.id)}</span><span class="route-state">${escapeHtml(t('reviewedStanding'))}: ${escapeHtml(reviewedRouteStatusLabel(route.canonical_status))} · ${escapeHtml(t('researchOutcome'))}: ${escapeHtml(routeOutcomeStatusLabel(route.operational_status))}</span></div><div class="route-title">${escapeHtml(route.title)}</div><div class="route-scope">${escapeHtml(route.scope)}</div><div class="route-scope">${escapeHtml(t('investigations'))}: ${escapeHtml(runIds.join(', ') || t('noneRecorded'))}</div>`;
+        item.addEventListener('click', () => {
+          selectedRouteId = route.id;
+          renderRouteNotice();
+        });
+        routeList.appendChild(item);
+      });
+      if (!state.routes.length) {
+        routeList.innerHTML = `<p>${escapeHtml(t('noRoutes'))}</p>`;
+      }
+      renderRouteNotice();
+    }
+
+    function renderRouteNotice() {
+      const route = state.routes.find(candidate => candidate.id === selectedRouteId);
+      if (!route) {
+        if (!activeRoute) {
+          document.getElementById('route-notice').textContent = t('noApprovedRoute');
+          return;
+        }
+        document.getElementById('route-notice').innerHTML = `<strong>${escapeHtml(t('activeResearchRoute'))}:</strong> ${escapeHtml(activeRoute.title)}<br><strong>${escapeHtml(t('conclusion'))}:</strong> ${escapeHtml(activeRoute.conclusion)}`;
+        return;
+      }
+      document.getElementById('route-notice').innerHTML = `<strong>${escapeHtml(route.id)} ${escapeHtml(t('conclusion'))}:</strong> ${escapeHtml(route.conclusion)}${route.preserved_results.length ? `<br><strong>${escapeHtml(t('preserved'))}:</strong> ${escapeHtml(route.preserved_results.join(' '))}` : ''}`;
+    }
+
+    function renderClaimsTable() {
+      const claimsBody = document.getElementById('claims-body');
+      claimsBody.replaceChildren();
+      state.claims.forEach(claim => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td><strong>${escapeHtml(claim.id)}</strong></td><td>${escapeHtml(claim.title)}</td><td class="status ${escapeHtml(claim.status)}">${escapeHtml(claimStatusLabel(claim.status))}</td><td>${escapeHtml(claim.depends_on.join(', ') || '—')}</td><td>${escapeHtml(claim.blocking ? t('keyStep') : t('supportingStep'))}</td><td>${escapeHtml(claim.note)}</td>`;
+        claimsBody.appendChild(row);
+      });
+    }
+
+    function renderValidation() {
+      const validationList = document.getElementById('validation-list');
+      validationList.replaceChildren();
+      if (!issues.length) {
+        validationList.innerHTML = `<p class="ok">${escapeHtml(t('recordsCoherent'))}</p>`;
+        return;
+      }
+      issues.forEach(issue => {
+        const row = document.createElement('div');
+        row.className = 'validation-row';
+        row.innerHTML = `<div class="severity-${escapeHtml(issue.severity)}">${escapeHtml(issueSeverityLabel(issue.severity))}</div><div>${escapeHtml(issueSummary(issue))}</div><details><summary>${escapeHtml(t('technicalDetails'))}</summary><code>${escapeHtml(issue.code)}</code><p>${escapeHtml(issue.message)}</p></details>`;
+        validationList.appendChild(row);
+      });
+    }
+
+    function renderDashboard() {
+      renderStaticCopy();
+      renderMetrics();
+      renderLanes();
+      renderRoutes();
+      renderClaimsTable();
+      renderValidation();
+      selectClaim(selectedClaimId);
+      requestAnimationFrame(drawEdges);
+    }
+
+    if (proposalMode) {
+      const modeLabel = document.getElementById('mode-label');
+      modeLabel.style.color = '#b45309';
+      modeLabel.style.fontWeight = '800';
+      document.body.style.boxShadow = 'inset 0 8px 0 #f59e0b';
+    }
+
+    document.querySelectorAll('.lang-button').forEach(button => button.addEventListener('click', () => {
+      currentLanguage = button.dataset.language;
+      try {
+        localStorage.setItem(storageKey, currentLanguage);
+      } catch (_error) {
+        // The toggle still works when browser storage is unavailable.
+      }
+      renderDashboard();
+    }));
+
+    document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(other => other.setAttribute('aria-selected', String(other === tab)));
+      document.querySelectorAll('.panel').forEach(panel => panel.hidden = panel.id !== tab.dataset.panel);
+      if (tab.dataset.panel === 'proof-panel') requestAnimationFrame(drawEdges);
+    }));
+
+    const initialClaim = state.claims.find(claim => claim.blocking) || state.claims[0];
+    selectedClaimId = initialClaim ? initialClaim.id : null;
+    renderDashboard();
+    new ResizeObserver(drawEdges).observe(document.getElementById('graph-wrap'));
+  </script>
+</body>
+</html>

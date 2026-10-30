@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://local.research-workflow/task-evidence.schema.json", "title": "Task evidence record",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "run_id", "route_id", "task_id", "status", "proof_items", "evidence_class", "derivation_roots", "independence_from", "dispatch", "artifact", "verdict"],
+  "properties": {
+    "schema_version": {"enum": ["1.0", "1.1"]}, "run_id": {"type": "string", "pattern": "^R[0-9]+$"}, "route_id": {"oneOf": [{"type": "string", "pattern": "^route:[A-Za-z0-9][A-Za-z0-9._-]*$"}, {"type": "null"}]},
+    "task_id": {"type": "string", "pattern": "^T[0-9]+$"}, "status": {"enum": ["planned", "dispatched", "returned", "critic_pending", "resolved", "accepted", "rejected"]},
+    "proof_items": {"type": "array", "items": {"type": "string", "pattern": "^P[0-9]+$"}, "uniqueItems": true},
+    "strict_prerequisites": {"type": "array", "description": "Mathematical claim prerequisites (P...) or preserved legacy task-order prerequisites (T...). New mathematical dependencies belong in claim.depends_on.", "items": {"type": "string", "pattern": "^[PT][0-9]+$"}, "uniqueItems": true},
+    "non_strict_links": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["type", "target"], "properties": {"type": {"enum": ["tests", "blocks", "supports", "surveys", "warns_circularity"]}, "target": {"type": "string", "pattern": "^P[0-9]+$"}}}},
+    "blocking_reason": {"oneOf": [{"type": "string", "minLength": 1}, {"type": "null"}]},
+    "evidence_class": {"enum": ["derivation", "source_audit", "critic", "resolution", "owner_resolution", "scoped_obstruction", "numerical", "lean_certificate", "state_proposal"]},
+    "derivation_roots": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}, "independence_from": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "dispatch": {"$ref": "#/$defs/maybeHashedFile"}, "artifact": {"oneOf": [{"$ref": "#/$defs/hashedFile"}, {"type": "null"}]},
+    "verdict": {"enum": ["supports", "rejects_route", "uncertain", "survives_current_attacks", "proposal_only"]}
+  },
+  "allOf": [
+    {"if": {"properties": {"schema_version": {"const": "1.1"}}}, "then": {"required": ["strict_prerequisites", "non_strict_links", "blocking_reason"]}}
+  ],
+  "$defs": {
+    "hashedFile": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+    "maybeHashedFile": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"oneOf": [{"type": "string", "pattern": "^[0-9a-f]{64}$"}, {"type": "null"}]}}}
+  }
+}

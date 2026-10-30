@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.research-workflow/state-mapping-proposal.schema.json",
+  "title": "Non-canonical project-state mapping proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "proposal_id", "status", "source_files", "candidate_state", "unresolved_mappings"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "proposal_id": {"type": "string", "pattern": "^MAP-[A-Za-z0-9._-]+$"},
+    "status": {"const": "proposal_only"},
+    "source_files": {"type": "array", "items": {"$ref": "#/$defs/hashedFile"}},
+    "candidate_state": {"$ref": "research-state.schema.json"},
+    "unresolved_mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "source_value", "candidates", "conservative_default", "reason", "owner_decision_required"],
+        "properties": {
+          "field": {"type": "string", "minLength": 1},
+          "source_value": {},
+          "candidates": {"type": "array", "minItems": 1, "items": {}},
+          "conservative_default": {},
+          "reason": {"type": "string", "minLength": 1},
+          "owner_decision_required": {"const": true}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hashedFile": {
+      "type": "object", "additionalProperties": false, "required": ["path", "sha256"],
+      "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+    }
+  }
+}

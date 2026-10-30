@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "proposal_id": "ST-R000-S0-S0",
+  "run_id": "R000",
+  "state_from": "S0",
+  "state_to": "S0",
+  "status": "proposal_only",
+  "owner_approval_reference": null,
+  "evidence_records": [],
+  "changes": {"claims": [], "routes": [], "runs": [], "notation": [], "assumptions": [], "manuscript": []}
+}

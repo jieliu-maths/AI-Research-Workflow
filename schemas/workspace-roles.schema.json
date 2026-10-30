@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/research-workflow/workspace-roles.schema.json",
+  "title": "Persistent peer-role task registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "topology",
+    "project_id",
+    "project_path",
+    "shared_project_directory",
+    "bootstrap_task_id",
+    "roles"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.1" },
+    "topology": { "const": "peer_tasks" },
+    "project_id": { "type": ["string", "null"] },
+    "project_path": { "type": ["string", "null"] },
+    "shared_project_directory": { "const": true },
+    "bootstrap_task_id": { "type": ["string", "null"] },
+    "roles": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "task_scope",
+          "workspace_mode",
+          "title",
+          "thread_id",
+          "host_id",
+          "status",
+          "model",
+          "reasoning_effort"
+          ,"is_current_task"
+        ],
+        "properties": {
+          "role": { "enum": ["director", "researcher", "critic"] },
+          "task_scope": { "const": "top_level" },
+          "workspace_mode": { "const": "saved_project_local" },
+          "title": { "enum": ["0 Director", "1 Researcher", "2 Critic"] },
+          "thread_id": { "type": ["string", "null"] },
+          "host_id": { "type": ["string", "null"] },
+          "status": {
+            "enum": ["unbound", "starting", "ready", "attention", "closed"]
+          },
+          "model": { "type": ["string", "null"] },
+          "reasoning_effort": { "type": ["string", "null"] },
+          "is_current_task": { "type": "boolean" }
+        },
+        "allOf": [
+          { "if": { "properties": { "role": { "const": "director" } } }, "then": { "properties": { "title": { "const": "0 Director" }, "is_current_task": { "const": true } } } },
+          { "if": { "properties": { "role": { "const": "researcher" } } }, "then": { "properties": { "title": { "const": "1 Researcher" }, "is_current_task": { "const": false } } } },
+          { "if": { "properties": { "role": { "const": "critic" } } }, "then": { "properties": { "title": { "const": "2 Critic" }, "is_current_task": { "const": false } } } }
+        ]
+      }
+    }
+  }
+}

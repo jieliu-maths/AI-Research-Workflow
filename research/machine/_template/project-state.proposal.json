@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "proposal_id": "MAP-initial",
+  "status": "proposal_only",
+  "source_files": [],
+  "candidate_state": {
+    "schema_version": "2.1",
+    "snapshot": {
+      "project_name": "Project name",
+      "state_version": "S0",
+      "human_reviewed_at": "1970-01-01",
+      "theorem_targets": [],
+      "active_route": null,
+      "active_run": null,
+      "authority": "machine_mirror",
+      "note": "Candidate mapping only; no mathematical state is approved by this file."
+    },
+    "canonical_files": [],
+    "claims": [],
+    "routes": [],
+    "runs": [],
+    "edges": []
+  },
+  "unresolved_mappings": []
+}

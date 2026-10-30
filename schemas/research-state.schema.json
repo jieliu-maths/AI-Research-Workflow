@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.research-workflow/research-state.schema.json",
+  "title": "Proof-ledger research-state mirror",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "snapshot", "canonical_files", "claims", "routes", "runs", "edges"],
+  "properties": {
+    "schema_version": {"const": "2.1"},
+    "snapshot": {
+      "type": "object", "additionalProperties": false,
+      "required": ["project_name", "state_version", "human_reviewed_at", "theorem_targets", "active_route", "active_run", "authority", "note"],
+      "properties": {
+        "project_name": {"type": "string", "minLength": 1},
+        "state_version": {"type": "string", "pattern": "^S[0-9]+$"},
+        "human_reviewed_at": {"type": "string", "format": "date"},
+        "theorem_targets": {"type": "array", "items": {"type": "string", "pattern": "^P[0-9]+$"}, "uniqueItems": true},
+        "active_route": {"oneOf": [{"$ref": "#/$defs/routeId"}, {"type": "null"}]},
+        "active_run": {"oneOf": [{"$ref": "#/$defs/runId"}, {"type": "null"}]},
+        "authority": {"const": "machine_mirror"}, "note": {"type": "string", "minLength": 1}
+      }
+    },
+    "canonical_files": {"type": "array", "items": {"$ref": "#/$defs/hashedFile"}},
+    "claims": {"type": "array", "items": {"$ref": "#/$defs/claim"}},
+    "routes": {"type": "array", "items": {"$ref": "#/$defs/route"}},
+    "runs": {"type": "array", "items": {"$ref": "#/$defs/run"}},
+    "edges": {"type": "array", "items": {"$ref": "#/$defs/edge"}}
+  },
+  "$defs": {
+    "routeId": {"type": "string", "pattern": "^route:[A-Za-z0-9][A-Za-z0-9._-]*$"},
+    "runId": {"type": "string", "pattern": "^R[0-9]+$"},
+    "hashedFile": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}},
+    "evidence": {
+      "type": "object", "additionalProperties": false, "required": ["id", "kind", "verdict", "scope", "path", "sha256"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^E-[A-Za-z0-9-]+$"},
+        "kind": {"enum": ["derivation", "source_audit", "critic", "resolution", "owner_resolution", "scoped_obstruction", "numerical", "lean_certificate", "state_proposal"]},
+        "verdict": {"enum": ["supports", "rejects_route", "uncertain", "survives_current_attacks", "proposal_only"]},
+        "scope": {"type": "string", "minLength": 1}, "path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "derivation_roots": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+      }
+    },
+    "claim": {
+      "type": "object", "additionalProperties": false, "required": ["id", "title", "group", "status", "blocking", "depends_on", "note"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^P[0-9]+$"}, "title": {"type": "string", "minLength": 1}, "group": {"type": "string", "minLength": 1},
+        "status": {"enum": ["open", "conditional", "conjectural", "formal", "formal_exact", "established", "external_input", "manuscript_unaudited", "selected_unverified", "deferred", "verified", "numerical", "rejected"]},
+        "blocking": {"type": "boolean"}, "depends_on": {"type": "array", "items": {"type": "string", "pattern": "^P[0-9]+$"}, "uniqueItems": true},
+        "note": {"type": "string", "minLength": 1}, "evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}}
+      }
+    },
+    "route": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "title", "canonical_status", "operational_status", "target_claims", "scope", "conclusion", "preserved_results", "evidence"],
+      "properties": {
+        "id": {"$ref": "#/$defs/routeId"}, "legacy_id": {"type": "string", "pattern": "^R[0-9]+$"}, "title": {"type": "string", "minLength": 1},
+        "canonical_status": {"enum": ["proposed", "active", "closed", "rejected"]}, "operational_status": {"enum": ["planned", "running", "completed", "rejected", "gated"]},
+        "target_claims": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^P[0-9]+$"}, "uniqueItems": true},
+        "scope": {"type": "string", "minLength": 1}, "conclusion": {"type": "string", "minLength": 1},
+        "preserved_results": {"type": "array", "items": {"type": "string", "minLength": 1}}, "evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}}
+      }
+    },
+    "run": {
+      "type": "object", "additionalProperties": false, "required": ["id", "route_id", "status", "state_in", "note"],
+      "properties": {
+        "id": {"$ref": "#/$defs/runId"}, "route_id": {"oneOf": [{"$ref": "#/$defs/routeId"}, {"type": "null"}]},
+        "status": {"enum": ["planned", "running", "gated", "completed", "aborted", "rejected"]},
+        "state_in": {"oneOf": [{"type": "string", "pattern": "^S[0-9]+$"}, {"type": "null"}]}, "note": {"type": "string", "minLength": 1},
+        "manifest": {"$ref": "#/$defs/hashedFile"}
+      }
+    },
+    "edge": {
+      "type": "object", "additionalProperties": false, "required": ["from", "to", "type", "note"],
+      "properties": {
+        "from": {"type": "string", "pattern": "^(P[0-9]+|R[0-9]+|route:[A-Za-z0-9][A-Za-z0-9._-]*)$"}, "to": {"type": "string", "pattern": "^P[0-9]+$"},
+        "type": {"enum": ["tests", "blocks", "supports", "surveys", "warns_circularity"]}, "note": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.research-workflow/run-manifest.schema.json",
+  "title": "Run manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "route_id", "state_in", "status", "brief", "route_approval_reference", "task_records", "director_summary", "state_transition"],
+  "properties": {
+    "schema_version": { "enum": ["1.0", "1.1"] },
+    "run_id": { "type": "string", "pattern": "^R[0-9]+$" },
+    "route_id": { "oneOf": [{ "type": "string", "pattern": "^route:[A-Za-z0-9][A-Za-z0-9._-]*$" }, { "type": "null" }] },
+    "state_in": { "type": "string", "pattern": "^S[0-9]+$" },
+    "status": { "enum": ["planned", "running", "gated", "completed", "aborted"] },
+    "brief": { "$ref": "#/$defs/maybeHashedFile" },
+    "route_approval_reference": { "type": "string", "minLength": 1 },
+    "task_records": { "type": "array", "items": { "$ref": "#/$defs/hashedFile" } },
+    "director_summary": { "oneOf": [{ "$ref": "#/$defs/hashedFile" }, { "type": "null" }] },
+    "state_transition": { "oneOf": [{ "$ref": "#/$defs/hashedFile" }, { "type": "null" }] },
+    "orchestration": { "$ref": "#/$defs/pathOnly" },
+    "route_signal": { "enum": ["not_assessed", "decisive_support", "partial_support", "null_result", "scoped_obstruction", "structural_failure", "not_applicable"] },
+    "route_review": { "oneOf": [{ "$ref": "#/$defs/pathOnly" }, { "type": "null" }] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "schema_version": { "const": "1.1" } } },
+      "then": { "required": ["orchestration", "route_signal", "route_review"] }
+    }
+  ],
+  "$defs": {
+    "hashedFile": { "type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": { "path": { "type": "string", "minLength": 1 }, "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" } } },
+    "maybeHashedFile": { "type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": { "path": { "type": "string", "minLength": 1 }, "sha256": { "oneOf": [{ "type": "string", "pattern": "^[0-9a-f]{64}$" }, { "type": "null" }] } } },
+    "pathOnly": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "minLength": 1 } } }
+  }
+}

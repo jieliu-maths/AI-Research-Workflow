@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://local.research-workflow/state-transition.schema.json", "title": "Canonical state transition proposal",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "proposal_id", "run_id", "state_from", "state_to", "status", "owner_approval_reference", "evidence_records", "changes"],
+  "properties": {
+    "schema_version": {"const": "1.0"}, "proposal_id": {"type": "string", "pattern": "^ST-R[0-9]+-S[0-9]+-S[0-9]+$"}, "run_id": {"type": "string", "pattern": "^R[0-9]+$"},
+    "state_from": {"type": "string", "pattern": "^S[0-9]+$"}, "state_to": {"type": "string", "pattern": "^S[0-9]+$"}, "status": {"enum": ["proposal_only", "owner_approved", "applied"]},
+    "owner_approval_reference": {"oneOf": [{"type": "string", "minLength": 1}, {"type": "null"}]}, "evidence_records": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "changes": {"type": "object", "additionalProperties": false, "required": ["claims", "routes", "runs", "notation", "assumptions", "manuscript"], "properties": {"claims": {"type": "array"}, "routes": {"type": "array"}, "runs": {"type": "array"}, "notation": {"type": "array"}, "assumptions": {"type": "array"}, "manuscript": {"type": "array"}}}
+  }
+}

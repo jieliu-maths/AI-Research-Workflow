@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.research-workflow/route-review.schema.json",
+  "title": "Route evidence review",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "review_id", "route_id", "status", "trigger", "reviewed_runs", "evidence", "recommendation", "recommendation_scope", "owner_decision", "owner_approval_reference", "decision_artifact"],
+  "properties": {
+    "schema_version": { "enum": ["1.0", "1.1"] },
+    "review_id": { "type": "string", "pattern": "^RR-[A-Za-z0-9._-]+-[0-9]+$" },
+    "route_id": { "type": "string", "pattern": "^route:[A-Za-z0-9][A-Za-z0-9._-]*$" },
+    "status": { "enum": ["due", "in_review", "owner_gate", "closed"] },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["three_runs_without_decisive_support", "repeated_obstruction_or_roots", "structural_failure", "owner_requested"],
+      "properties": {
+        "three_runs_without_decisive_support": { "type": "boolean" },
+        "repeated_obstruction_or_roots": { "type": "boolean" },
+        "structural_failure": { "type": "boolean" },
+        "owner_requested": { "type": "boolean" }
+      }
+    },
+    "reviewed_runs": { "type": "array", "items": { "type": "string", "pattern": "^R[0-9]+$" }, "minItems": 1, "uniqueItems": true },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decisive_support", "partial_support", "null_results", "scoped_obstructions", "repeated_derivation_roots", "remaining_bottlenecks", "cheapest_discriminating_test"],
+      "properties": {
+        "decisive_support": { "$ref": "#/$defs/stringList" },
+        "partial_support": { "$ref": "#/$defs/stringList" },
+        "null_results": { "$ref": "#/$defs/stringList" },
+        "scoped_obstructions": { "$ref": "#/$defs/stringList" },
+        "repeated_derivation_roots": { "$ref": "#/$defs/stringList" },
+        "remaining_bottlenecks": { "$ref": "#/$defs/stringList" },
+        "cheapest_discriminating_test": { "type": ["string", "null"] }
+      }
+    },
+    "literature_refresh": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "questions_from_obstructions", "primary_sources", "comparison_with_current_route", "new_or_revised_routes"],
+      "properties": {
+        "status": { "enum": ["pending", "in_progress", "completed"] },
+        "questions_from_obstructions": { "$ref": "#/$defs/stringList" },
+        "primary_sources": { "$ref": "#/$defs/stringList" },
+        "comparison_with_current_route": { "type": ["string", "null"] },
+        "new_or_revised_routes": { "$ref": "#/$defs/stringList" }
+      }
+    },
+    "recommendation": { "enum": ["continue", "repair", "narrow", "branch", "suspend", "reject_scoped", "literature_refresh", null] },
+    "recommendation_scope": { "type": ["string", "null"] },
+    "owner_decision": { "enum": ["pending", "continue", "repair", "narrow", "branch", "suspend", "reject_scoped", "literature_refresh", null] },
+    "owner_approval_reference": { "type": ["string", "null"] },
+    "decision_artifact": { "oneOf": [{ "$ref": "#/$defs/hashedFile" }, { "type": "null" }] }
+  },
+  "allOf": [
+    { "if": { "properties": { "schema_version": { "const": "1.1" } } }, "then": { "required": ["literature_refresh"] } }
+  ],
+  "$defs": {
+    "stringList": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "hashedFile": { "type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": { "path": { "type": "string", "minLength": 1 }, "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" } } }
+  }
+}

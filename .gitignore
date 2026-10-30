@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.DS_Store
+.research-workflow/
+.venv/
+.env
+.env.*
+!.env.example
+output/
+dist/

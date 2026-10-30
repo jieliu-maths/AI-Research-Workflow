@@ -1,0 +1,5 @@
+{
+  "schema_version": "1.0",
+  "kind": "standalone-proof-ledger-research-workflow-library",
+  "library_id": "ai-research-workflow-kernel"
+}

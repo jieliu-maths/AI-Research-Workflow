@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.1",
+  "topology": "peer_tasks",
+  "project_id": null,
+  "project_path": null,
+  "shared_project_directory": true,
+  "bootstrap_task_id": null,
+  "roles": [
+    {
+      "role": "director",
+      "task_scope": "top_level",
+      "workspace_mode": "saved_project_local",
+      "title": "0 Director",
+      "thread_id": null,
+      "host_id": null,
+      "status": "unbound",
+      "model": "gpt-5.6-sol",
+      "reasoning_effort": "high",
+      "is_current_task": true
+    },
+    {
+      "role": "researcher",
+      "task_scope": "top_level",
+      "workspace_mode": "saved_project_local",
+      "title": "1 Researcher",
+      "thread_id": null,
+      "host_id": null,
+      "status": "unbound",
+      "model": "gpt-5.6-sol",
+      "reasoning_effort": "xhigh",
+      "is_current_task": false
+    },
+    {
+      "role": "critic",
+      "task_scope": "top_level",
+      "workspace_mode": "saved_project_local",
+      "title": "2 Critic",
+      "thread_id": null,
+      "host_id": null,
+      "status": "unbound",
+      "model": "gpt-5.6-sol",
+      "reasoning_effort": "xhigh",
+      "is_current_task": false
+    }
+  ]
+}

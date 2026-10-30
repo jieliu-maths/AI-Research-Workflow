@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.research-workflow/run-hydration-proposal.schema.json",
+  "title": "Historical run sidecar hydration proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "run_id", "source_directory", "source_artifacts", "detected_task_ids", "proposed_sidecars", "unresolved_mappings"],
+  "properties": {
+    "schema_version": {"enum": ["1.0", "1.1"]},
+    "status": {"const": "proposal_only"},
+    "run_id": {"type": "string", "pattern": "^R[0-9]+$"},
+    "source_directory": {"type": "string", "minLength": 1},
+    "source_artifacts": {"type": "array", "items": {"$ref": "#/$defs/hashedFile"}},
+    "detected_task_ids": {"type": "array", "items": {"type": "string", "pattern": "^T[0-9]+$"}, "uniqueItems": true},
+    "proposed_sidecars": {
+      "type": "object", "additionalProperties": false, "required": ["manifest", "task_records", "state_transition"],
+      "properties": {
+        "manifest": {"type": "string", "minLength": 1},
+        "task_records": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "state_transition": {"type": "string", "minLength": 1},
+        "orchestration": {"type": "string", "minLength": 1},
+        "route_review": {"type": "string", "minLength": 1}
+      }
+    },
+    "unresolved_mappings": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+  },
+  "allOf": [
+    {"if": {"properties": {"schema_version": {"const": "1.1"}}}, "then": {"properties": {"proposed_sidecars": {"required": ["orchestration", "route_review"]}}}}
+  ],
+  "$defs": {
+    "hashedFile": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}}
+  }
+}

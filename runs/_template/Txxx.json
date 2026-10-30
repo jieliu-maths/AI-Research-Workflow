@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.1",
+  "run_id": "R000",
+  "route_id": null,
+  "task_id": "T000",
+  "status": "planned",
+  "proof_items": [],
+  "strict_prerequisites": [],
+  "non_strict_links": [],
+  "blocking_reason": null,
+  "evidence_class": "derivation",
+  "derivation_roots": [],
+  "independence_from": [],
+  "dispatch": {"path": "runs/R000/task-brief-T000.md", "sha256": null},
+  "artifact": null,
+  "verdict": "proposal_only"
+}

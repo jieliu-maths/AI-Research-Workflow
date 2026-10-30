@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.1",
+  "review_id": "RR-route-slug-001",
+  "route_id": "route:slug",
+  "status": "due",
+  "trigger": {
+    "three_runs_without_decisive_support": false,
+    "repeated_obstruction_or_roots": false,
+    "structural_failure": false,
+    "owner_requested": false
+  },
+  "reviewed_runs": ["R000"],
+  "evidence": {
+    "decisive_support": [],
+    "partial_support": [],
+    "null_results": [],
+    "scoped_obstructions": [],
+    "repeated_derivation_roots": [],
+    "remaining_bottlenecks": [],
+    "cheapest_discriminating_test": null
+  },
+  "literature_refresh": {
+    "status": "pending",
+    "questions_from_obstructions": [],
+    "primary_sources": [],
+    "comparison_with_current_route": null,
+    "new_or_revised_routes": []
+  },
+  "recommendation": null,
+  "recommendation_scope": null,
+  "owner_decision": "pending",
+  "owner_approval_reference": null,
+  "decision_artifact": null
+}

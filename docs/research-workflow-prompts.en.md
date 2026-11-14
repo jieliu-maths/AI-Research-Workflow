@@ -1,94 +1,63 @@
-# Reusable role prompts — English
+# Workflow prompts (3.1: one research window)
 
-[Chinese operational prompts](research-workflow-prompts.md). The portable source
-placeholder `<WORKFLOW_LIBRARY>` is replaced only in installed project copies.
-Use a verified source whose library identity and self-check both pass; do not
-trust a legacy `source_hint` without checking it. A mathematical project is
-never a source library.
-
-## New mathematical project
+## Install or upgrade
 
 ```text
-Help initialize this AI4Math research project from my tentative question,
-known literature, constraints, and intended result. Follow AGENTS.md and
-WORKFLOW.md. Verify the standalone source at <WORKFLOW_LIBRARY> with its
-workflow identify and workflow self-check commands; preview installation
-before applying it. Never copy another project's mathematical state.
-
-The current chat is 0 Director. First assess feasibility, value, precise
-statement, primary literature, obstructions, and three to five genuinely
-different routes. Present a recommendation and wait for my explicit approval
-of the exact target and route before freezing the framework or opening R001.
-
-After that approval, this prompt authorizes creation of exactly two separate
-visible top-level Codex tasks, 1 Researcher and 2 Critic, in this same saved
-project/local directory. Do not use subagents or isolated worktrees for those
-roles. Reuse suitable existing peers. Wait for readiness, record the distinct
-task identities in research/machine/workspace-roles.json, and validate.
-If the supported topology is unavailable, stop at that operational gate.
-Directory creation alone does not establish an approved mathematical project.
+Use the standalone workflow library at <WORKFLOW_LIBRARY>. Verify its marker,
+workflow identify, and workflow self-check; it must not be an installed project.
+If unresolved, locate a unique verified saved source project or ask for its path;
+a legacy source_hint is only an untrusted fallback candidate. Preview the
+appropriate init/migrate/upgrade command, inspect conflicts, then apply within
+this authorization. Preserve mathematics, submitted evidence, old runs, and
+project-specific guardrails. Do not create role chats or register a topology.
+Run researchctl validate, summary, and dashboard. Report changes and conflicts;
+use Markdown reports by default, optional LaTeX/PDF exports only when needed.
 ```
 
-## Migrate or upgrade an existing mathematical project
+## Start or resume research
 
 ```text
-Inspect the current project's AGENTS.md, WORKFLOW.md, mathematical state, and
-installation record. Resolve the standalone source from the saved-project
-list or from <WORKFLOW_LIBRARY>. Verify its source-only library identity and
-self-check. Do not accept a legacy source_hint or another mathematical project
-as a trusted source. If there is no unique verified source, ask for its path.
-
-Preview migrate for a pre-kernel project, or upgrade for an installed project.
-Preserve mathematical files, instantiated runs, protected records, and local
-modifications. Apply only within the scope I authorized and after a conflict-free
-preview; report conflicts instead of overwriting them. Validate afterwards.
-Any ambiguous claim mapping remains a proposal pending my review. Do not
-refresh canonical hashes or infer theorem status to hide drift. This prompt
-alone does not authorize new role chats, a technical route, or a proof run.
+Follow WORKFLOW.md in this window. Validate, read the short STATE entry, active
+brief, and relevant ledger/hypotheses/notation; load long evidence only as needed.
+Before construction obtain approval of the exact target, main route, assumptions,
+and bounded exploration scope. Within that scope work continuously without
+per-step permission. Material changes to those boundaries need a new decision.
+Use only brief.md, work.md, and manifest.json for an ordinary session. Keep cheap
+candidate preflight, local derivations, repairs, sources, scoped failures, and
+the final mathematical summary in work.md. Index and hash durable evidence only
+when submitted. Do not copy the entire template directory or duplicate reports.
+Trigger independent review for key identities, core estimates, claimed gap
+closures, formal promotions, or an owner request. Freeze a baseline in a fresh
+context from only the question and conventions before candidate disclosure;
+then compare the exact candidate and record review.json. Disclose root overlap
+and prior exposure. Self-check is not independent evidence. Leave unavailable
+reviews pending and continue only unrelated authorized work.
+Propose formal changes separately; never update canonical conclusions, claim
+status, hypotheses, global notation, or manuscript without explicit approval.
+After two no-information sessions, repeated obstruction or three nondecisive sessions pause construction and
+review the route with fresh primary sources and independent assessment; the
+owner decides continuation or route changes. Close with mathematical results,
+remaining gaps, and the next question. Do not exceed approved scope.
 ```
 
-## Repair only the role workspace
+## Independent review
 
 ```text
-This prompt authorizes creating only missing independent role chats for this
-installed mathematical project. Keep the current chat as 0 Director, locate
-the exact saved project, reuse reachable 1 Researcher and 2 Critic peers, and
-create only missing roles as visible top-level local tasks sharing its folder.
-Never substitute Director subagents. Require three different task identities.
-Read the role protocols, wait for readiness, write the operational role registry,
-and validate. Do not start mathematical work or change canonical state.
-If a peer cannot be established, report the workspace gate explicitly.
+First read only the exact question, hypotheses, conventions, and allowed inputs;
+save and freeze your independent derivation or attack before seeing the candidate.
+Then compare the proof, disclose shared derivation roots and unresolved issues,
+and record exact scope. If already exposed to the proof, mark self_check.
+Return reject, uncertain, or survives_current_attacks; never promote canonical
+claims or treat critique as proof. Do not create additional chats.
 ```
 
-## Operate one already approved run
+## Mathematical feedback / 数学反馈
 
-```text
-Operate only the currently approved research run. Read AGENTS.md, WORKFLOW.md,
-PROJECT_CHARTER.md, STATE.md, research/problem.md, notation, relevant ledger and
-proof-map entries, the role protocol, frozen run brief/amendments/orchestration,
-and workspace role registry. Validate before dispatch, after evidence returns,
-before a state proposal, and after any approved synchronization.
-
-Keep one exact claim/question per task. Before a long construction, freeze the
-candidate and perform applicable topology/continuity, dimension-specific
-operator calculus, first-variation scaling, full derivation-root quotient,
-quantifier/blind-direction, and localization checks. State the exact scope of
-failure. Use the registered independent Researcher and blind-first Critic peers;
-preserve raw artifacts and seek Critic confirmation of substantive repairs.
-Inspect external evidence bundles without treating metadata or hashes as truth.
-
-Wait for role results and continue only inside the existing approved run.
-Stop at a human decision, run boundary, new permission need, or infrastructure
-failure. Review an unproductive route before another construction run; refresh
-primary literature before presenting a route recommendation. Only I approve
-route activation, replacement, continuation, merging, or material narrowing.
-
-Report the theorem target, exact result or scoped obstruction, decisive formula,
-proof consequence, remaining gap, and next mathematical question. Define new
-symbols before use and keep operational details internal unless they affect
-reliability or I request them. Prepare a state proposal without accepting it
-on my behalf. No claim promotion, global notation change, or manuscript transfer
-without explicit approval. After an approved synchronization, rebuild the
-Markdown, LaTeX, and PDF reading copies with researchctl report; disclose any
-missing PDF compiler. Never automatically open the next run.
-```
+Follow docs/research-feedback.md. 核对原目标的量词、范围、拓扑和来源假设；
+不要证明更容易的替代命题。可执行检查使用冻结 evaluator，只有在已有授权
+范围内才执行 --run；保留失败、超时与检查范围。升级计算时先记信息目标、
+预算和停止条件。关键证据按 claim/revision 冻结，用 claim_records 与
+critical_reviews 关联；proof 不必与 work/summary 同一文件。修改依赖触发
+相关版本复核，不自动改变正式命题地位。每轮说明新增信息，两轮 none 提前
+复盘。先用同模型、同推理强度、同预算和冻结真实任务比较流程，匿名评审
+正确性、命题含义、表述、引用、复现性与人机时间；示例不是科研效果实验。

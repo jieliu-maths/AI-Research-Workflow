@@ -3,6 +3,23 @@
 The public release is AI4Math-first. AI4S is experimental. Planned integrations
 are not included merely because their evidence contract is documented.
 
+## Implemented in 3.1.0
+
+- Meaning/source correspondence checks and exact versioned claim review.
+- Explicit local evaluator runner with timeout, frozen inputs and raw receipts.
+- Information-goal/budget records and early no-information route review.
+- Frozen task packets, blinded labels and human-scored comparison metrics.
+- Read-only dependency-impact queries and transitive evidence recheck overlays.
+
+## Implemented in 3.0.0
+
+- Default single-window continuous research with short approved-state recovery.
+- Three ordinary session files; conditional evidence, key review, and proposals.
+- Hashed independent baseline and candidate comparison at key mathematical gates.
+- Optional Markdown reports with explicit LaTeX/PDF exports.
+- Backward-compatible historical evidence validation and conflict-safe upgrades;
+  no automatic mathematical promotion or permanent role orchestration.
+
 ## Implemented in 2.7.0
 
 - Portable English/Chinese entry points and role prompts; MIT licensing.
@@ -25,7 +42,7 @@ are not included merely because their evidence contract is documented.
 - Bounded context/handoff packets and dependency-version freshness, evaluated
   against the existing QED and MathResearch Ledger designs before adding an MCP adapter.
 - Reviewed small mathematical examples, an onboarding checklist, and measured
-  human review effort. Generic host adapters must preserve independent tasks
+  human review effort. Generic host adapters must preserve independent review
   and owner gates before being described as supported.
 - Bounded execution, cancellation, and actual resource receipts for adapters.
   A manually declared budget is not automatic enforcement.

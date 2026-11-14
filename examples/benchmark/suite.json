@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0",
+  "suite_id": "teaching-feedback-mechanics",
+  "purpose": "mechanics_only",
+  "factor": "workflow",
+  "comparison": "matched_budget",
+  "budget": {
+    "max_seconds": 120,
+    "max_cost_usd": null
+  },
+  "configurations": [
+    {
+      "id": "direct",
+      "model": "owner-selected-model",
+      "reasoning_effort": "owner-selected-effort",
+      "workflow": "direct single window"
+    },
+    {
+      "id": "feedback",
+      "model": "owner-selected-model",
+      "reasoning_effort": "owner-selected-effort",
+      "workflow": "single window plus mathematical feedback"
+    }
+  ],
+  "cases": [
+    {
+      "id": "polynomial",
+      "category": "polynomial",
+      "question": {
+        "path": "examples/benchmark/questions/polynomial.md",
+        "sha256": "b36abe01c4f5378846a55771095bf60c6c780b5dc43004c644a42ec264ba8be6"
+      },
+      "context": [],
+      "reference": {
+        "path": "examples/benchmark/references/polynomial.md",
+        "sha256": "ff9e67ac6eb2319198722a6ea6ae29dc161164bb9e169ed3f30d179060088145"
+      },
+      "expected_disposition": "accepted"
+    },
+    {
+      "id": "quantifiers",
+      "category": "quantifiers",
+      "question": {
+        "path": "examples/benchmark/questions/quantifiers.md",
+        "sha256": "1d72c5cfb46f54c9a2b4f3c324069241d2635ab388bb0a2b930ad094df7efc29"
+      },
+      "context": [],
+      "reference": {
+        "path": "examples/benchmark/references/quantifiers.md",
+        "sha256": "6ce0195d3ccb4cad14be601551428301e34b02068048fa695b205b9d44bc7e27"
+      },
+      "expected_disposition": "rejected"
+    },
+    {
+      "id": "citation",
+      "category": "citation",
+      "question": {
+        "path": "examples/benchmark/questions/citation.md",
+        "sha256": "8b050ad9aab71a84d139ecabc9dff8b5ff558fe13a3956978e69d59bfcf4add5"
+      },
+      "context": [],
+      "reference": {
+        "path": "examples/benchmark/references/citation.md",
+        "sha256": "356c472d7a56f60574c55925858b943502a54caec1e0a603969c659a42add321"
+      },
+      "expected_disposition": "rejected"
+    },
+    {
+      "id": "scope",
+      "category": "scope",
+      "question": {
+        "path": "examples/benchmark/questions/scope.md",
+        "sha256": "fd535e85e08db693bb9cb92ec832daf75c97a05a5523cbe185f9b55ae44c6ce7"
+      },
+      "context": [],
+      "reference": {
+        "path": "examples/benchmark/references/scope.md",
+        "sha256": "58e2d73b5b6b2e218ec4fc03fa7139316b3eb5c9b604e64ccee466a38d1ba18d"
+      },
+      "expected_disposition": "rejected"
+    }
+  ]
+}

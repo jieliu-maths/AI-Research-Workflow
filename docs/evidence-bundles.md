@@ -86,3 +86,21 @@ automatic synonym for “Lean checked.” The human evidence gate remains in for
 在 AI4Math 中，证据包通过现有任务产物引用接入。独立审查须确认命题、
 假设、量词、依赖和核验范围，再由负责人决定是否更新正式记录。
 AI4S 的数据分离、复现、误差与结论范围审查同样不可省略。
+
+## Single-window research (3.0)
+
+External evidence is optional input, not a reason to create permanent agent
+roles. Keep local computations in the active work note; index only submitted
+durable evidence. Formal change proposals cite local Txxx evidence IDs through
+the manifest's hashed task records, including exact scope and derivation roots.
+Triggered independent review uses review.json with distinct frozen question,
+baseline, candidate, and comparison artifacts. The reviewed candidate must match
+the final work artifact. Self-check, metadata validation, and a surviving critique
+do not replace proof or explicit owner approval. Provisional planning entries
+can be proposed without pretending they have passed a proof-review gate.
+
+In 3.1, versioned claim snapshots and reviews bind exact statement/proof
+revisions rather than the final work note; the v1.2 description above is the
+historical contract. `checkctl --run` is a separate opt-in execution tool;
+evidencectl remains inspection-only and never replays commands. See
+[the feedback guide](research-feedback.md) for command/result scope.

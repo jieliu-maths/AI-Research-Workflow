@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "claim_id": "P000",
+  "revision": "v1",
+  "status": "provisional_evidence",
+  "target": {
+    "path": "runs/R000/brief.md",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "statement": "Exact submitted assertion",
+  "quantifiers": "All quantifiers and uniformity requirements",
+  "parameter_regime": "Exact dimension and parameter domain, or explicitly not applicable",
+  "function_space": "Approved topology, or explicitly not applicable",
+  "hypotheses": [],
+  "excluded_weakenings": [
+    "State which easier or narrower assertions do not answer the target"
+  ],
+  "meaning_audit": {
+    "status": "pending",
+    "note": ""
+  },
+  "prior_work": [],
+  "novelty": {
+    "status": "unassessed",
+    "note": ""
+  },
+  "proof": {
+    "path": "runs/R000/P000-v1-proof.md",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "derivation_roots": [
+    "Exact definitions or source results"
+  ],
+  "depends_on": [],
+  "supersedes": null,
+  "change_kind": "initial"
+}

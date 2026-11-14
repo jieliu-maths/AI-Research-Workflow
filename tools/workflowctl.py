@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 
-KERNEL_VERSION = "2.7.0"
+KERNEL_VERSION = "3.1.0"
 SCHEMA_VERSION = "2.1"
 CONFIG_PATH = ".research-workflow.json"
 REPORT_DIR = "research/machine"
@@ -25,32 +25,63 @@ LIBRARY_MARKER_PATH = ".research-workflow-library.json"
 LIBRARY_KIND = "standalone-proof-ledger-research-workflow-library"
 LIBRARY_ID = "ai-research-workflow-kernel"
 
+# Only the first three templates are needed for ordinary research.
 FULL_TEMPLATE_FILES = (
     "runs/_template/brief.md",
-    "runs/_template/task-brief.md",
-    "runs/_template/learning-note-Txxx.md",
-    "runs/_template/status.md",
-    "runs/_template/amendments.md",
-    "runs/_template/resolution-Txxx.md",
-    "runs/_template/state_update_proposal.md",
-    "runs/_template/director-run-summary.md",
+    "runs/_template/work.md",
     "runs/_template/manifest.json",
     "runs/_template/Txxx.json",
+    "runs/_template/review.json",
+    "runs/_template/claim-evidence.json",
+    "runs/_template/state_update_proposal.md",
     "runs/_template/state-transition.json",
-    "runs/_template/orchestration.json",
     "runs/_template/route-review.md",
     "runs/_template/route-review.json",
 )
+LEGACY_TEMPLATE_FILES = tuple(
+    "runs/_template/legacy/" + name for name in (
+        "task-brief.md", "learning-note-Txxx.md", "status.md", "amendments.md",
+        "resolution-Txxx.md", "director-run-summary.md", "orchestration.json", "README.md",
+    )
+)
+WORKFLOW_DOCUMENTS = ("WORKFLOW.md",) + tuple(
+    "agents/" + name + ".md" for name in (
+        "protocol", "critic", "director", "experimenter", "mathematical-review-template",
+        "planner", "researcher", "runtime_config", "state_manager",
+    )
+)
+# Exact shipped v2.7.0 documents can be adopted as managed files on upgrade.
+# Modified project documents conflict rather than silently losing guardrails.
+LEGACY_DOCUMENT_HASHES = {
+    "WORKFLOW.md": "f58b5a3a92014d004db95b60de5a159ed4c42b16d5ebaacb165e866a17f11e86",
+    "agents/critic.md": "abc5036ebb8ab1da2b9a6137476836f91f9e5f98d999707b81db2aae40226e8a",
+    "agents/director.md": "cc3574212a48d353337e02f39986d08f8ec5fa115513f2bb0f49dac57befeefc",
+    "agents/experimenter.md": "34eca96afb5364a41e157fe6e29b5ca76d44107e52e33b1cd3bd4e1462b54cd3",
+    "agents/mathematical-review-template.md": "d82ee541f2bc8ff254cbcb58e274e331a3e9a5dd94aad0aeda991c99de04c6b4",
+    "agents/planner.md": "90e0b2cbb42236c2532931c9a364684901a85185d50b61b1af7a7eead8473e6b",
+    "agents/protocol.md": "aa24241d6aedfb0ae82213a1e30355ef98182000896fdc868de8436e8dff93dc",
+    "agents/researcher.md": "0b8e460bb3afca63461ffcc3a724881f5e01d67854d0b4f1a4efd3c4fdef4702",
+    "agents/runtime_config.md": "59730d259a345f3845ee38a8bf389ebead18d2a55ab1814c592cff9660c9fdc9",
+    "agents/state_manager.md": "7d0c797ee6c15dfd373efdcda87e8e038c1f901693f943ff1806ed1e7f0f10fc"
+}
 
 MANAGED_FILES = (
     "WORKFLOW-LICENSE",
     "tools/researchctl.py",
+    "tools/research_checks.py",
+    "tools/checkctl.py",
+    "tools/benchctl.py",
     "tools/workflowctl.py",
     "tools/evidencectl.py",
     "tests/test_workflow_kernel.py",
+    "tests/test_research_feedback.py",
     "schemas/research-state.schema.json",
     "schemas/run-manifest.schema.json",
     "schemas/task-evidence.schema.json",
+    "schemas/critical-review.schema.json",
+    "schemas/claim-evidence.schema.json",
+    "schemas/check-plan.schema.json",
+    "schemas/check-result.schema.json",
     "schemas/state-transition.schema.json",
     "schemas/state-mapping-proposal.schema.json",
     "schemas/run-hydration-proposal.schema.json",
@@ -62,93 +93,86 @@ MANAGED_FILES = (
     "dashboard/template.html",
     "docs/research-workflow-prompts.md",
     "docs/evidence-bundles.md",
+    "docs/research-feedback.md",
+    "evaluation/suite-template.json",
+    "examples/ai4math/checks/evaluator.py",
+    "examples/ai4math/checks/make_plan.py",
+    "examples/ai4math/checks/polynomial.json",
+    "examples/ai4math/checks/scale-failure.json",
+    "examples/ai4math/checks/README.md",
     "docs/research-workflow-prompts.en.md",
     "literature/source_note_template.md",
     ".agents/skills/research-workflow/SKILL.md",
     ".agents/skills/research-workflow/references/state-model.md",
     ".agents/skills/research-workflow/references/reuse-and-upgrades.md",
-) + FULL_TEMPLATE_FILES
+) + FULL_TEMPLATE_FILES + LEGACY_TEMPLATE_FILES + WORKFLOW_DOCUMENTS
 
 # Project documents remain project-owned except for these explicitly delimited blocks.
 BLOCK_SPECS = (
-    ("WORKFLOW.md", "owner-gates"),
-    ("WORKFLOW.md", "project-inception"),
-    ("WORKFLOW.md", "peer-role-tasks"),
-    ("WORKFLOW.md", "director-return-loop"),
-    ("WORKFLOW.md", "route-evidence-review"),
-    ("WORKFLOW.md", "readable-research-record"),
-    ("WORKFLOW.md", "candidate-preflight"),
-    ("WORKFLOW.md", "notation-disclosure"),
-    ("WORKFLOW.md", "mathematics-only-review-output"),
-    ("WORKFLOW.md", "machine-control"),
+    ("AGENTS.md", "governing-workflow"),
     ("AGENTS.md", "project-owner-gates"),
-    ("agents/protocol.md", "peer-role-topology"),
-    ("agents/protocol.md", "role-return-and-route-review"),
-    ("agents/protocol.md", "mathematics-only-human-output"),
-    ("agents/protocol.md", "notation-disclosure"),
-    ("agents/protocol.md", "dispatch-evidence"),
-    ("agents/protocol.md", "run-close-and-route-gates"),
-    ("agents/protocol.md", "candidate-preflight"),
-    ("agents/director.md", "director-owner-gates"),
-    ("agents/director.md", "director-orchestration"),
-    ("agents/director.md", "mathematics-only-output"),
-    ("agents/director.md", "notation-disclosure"),
-    ("agents/director.md", "candidate-preflight"),
-    ("agents/researcher.md", "role-return"),
-    ("agents/researcher.md", "candidate-preflight"),
-    ("agents/critic.md", "role-return"),
-    ("agents/critic.md", "candidate-preflight"),
-    ("agents/mathematical-review-template.md", "review-output-boundary"),
-    ("agents/state_manager.md", "readable-research-record"),
 )
 
-INIT_SOURCE_FILES = (
-    "WORKFLOW.md",
-    "agents/protocol.md",
-    "agents/critic.md",
-    "agents/director.md",
-    "agents/experimenter.md",
-    "agents/mathematical-review-template.md",
-    "agents/planner.md",
-    "agents/researcher.md",
-    "agents/runtime_config.md",
-    "agents/state_manager.md",
-)
+
+INIT_SOURCE_FILES: tuple[str, ...] = ()
 
 INIT_TEXT_FILES = {
     "AGENTS.md": """# Project instructions for AI research sessions
 
+<!-- research-workflow:block governing-workflow start -->
 ## Governing workflow
 
-Follow `WORKFLOW.md`. Before mathematical work, read `PROJECT_CHARTER.md`,
-`STATE.md`, `research/problem.md`, the relevant proof-ledger rows, notation,
-and the active run brief. Work on one task ID at a time and obey its stop
-condition.
+Follow `WORKFLOW.md`. Default to one research window and one active mathematical
+question. Read the short `STATE.md` first, then the relevant charter, ledger,
+notation, and active brief; load detailed evidence only as needed. Run
+`python3 tools/researchctl.py validate` at session start, when evidence is
+frozen, before a state proposal, and after an approved synchronization. In the
+standalone source library run `./workflow self-check` instead; it has no
+project mathematical state.
 
-Distinguish exact, formal, conditional, conjectural, numerical, external, and
-rejected statements. A run result does not change canonical mathematical state
-without explicit human approval. Every technical-route selection or change
-also requires explicit owner approval. Do not edit `paper/main.tex` unless the
-task explicitly requests manuscript work and the supporting claim has passed
-its evidence gate.
+The single-window rules in the managed blocks supersede retired role-topology,
+mandatory dispatch, and duplicate-record requirements in preserved older
+workflow text. They do not override project-specific mathematical guardrails.
+<!-- research-workflow:block governing-workflow end -->
 
-Run `python3 tools/researchctl.py validate` before dispatch, after evidence
-returns, before a state proposal, and after an approved synchronization.
+<!-- research-workflow:block project-owner-gates start -->
+## Mathematical boundaries
 
-For a new project, first assess the owner's initial information, feasibility,
-value, precise target, literature, and competing routes. Obtain owner approval
-of the target and route before freezing the proof framework. The current task
-is `0 Director`; create only the two independent top-level peers
-`1 Researcher` and `2 Critic` in the same saved project.
-
-After every approved mathematical advance, update the core mathematical files
-and research log, then run `python3 tools/researchctl.py report` to rebuild the
-Markdown, LaTeX, and PDF reading copies.
+- Work autonomously on local candidates and calculations inside the owner's
+  approved target, main route, assumptions, and exploration scope. Obtain
+  explicit owner approval for material changes to those boundaries.
+- Before long derivations, verify the intended quantifiers, regime, topology,
+  hypotheses, and source applicability; do not solve an easier substitute.
+- Preserve evidence lineage, exact hypotheses, quantifiers, mathematical status,
+  scoped failures, and original submitted artifacts. Numerical checks and
+  critique are not proofs; self-review is not independent review.
+- Independently review key identities, core estimates, claimed proof-gap
+  closures, and formal conclusion promotions. If unavailable, leave that
+  conclusion pending and continue only unrelated authorized exploration.
+- Only explicit human approval changes canonical conclusions, claim status,
+  hypotheses, global notation, or manuscript. Manuscript work also requires
+  explicit authorization and the supporting evidence gate.
+- Use one brief, one continuous work note including the closing mathematical
+  summary, and one manifest per session. Additional records are conditional;
+  no permanent role tasks, role registry, or orchestration file is required.
+- Bind key reviews to frozen claim/proof revisions. Keep work notes appendable;
+  substantively changed dependencies require recheck, not automatic promotion
+  or demotion of canonical state.
+- Escalate compute only with an information goal, budget and stop rule; use
+  executable checks within approved scope and preserve their exact limits.
+- After two no-information sessions, repeated obstruction, or three sessions without independently reviewed
+  decisive support, review the route and refresh primary sources before
+  recommending a decision; the owner approves continuation or route changes.
+- Explain new notation before use and report mathematical results in
+  mathematical language. Keep audit details internal unless requested or
+  needed to explain a reliability problem.
+<!-- research-workflow:block project-owner-gates end -->
 
 ## Project-specific guardrails
 
-- Replace this section with the equation, parameter, phase, notation, and
-  theorem-specific restrictions approved for this project.
+Replace this section with the equation, parameter, topology, notation, theorem,
+and evidence restrictions approved for the project. Never import mathematical
+guardrails from the workflow source library or another project.
 """,
     "PROJECT_CHARTER.md": """# Project charter
 
@@ -168,23 +192,26 @@ Status: draft; no mathematical target is approved yet.
 """,
     "STATE.md": """# Project state S0
 
-No theorem target, proof claim, route, or active run has been approved yet.
-Initialize the project through the literature, problem, and route-selection
-gates in `WORKFLOW.md` before opening R001.
+## Target, main route, and approved exploration scope
+No target, main route, assumptions, or construction scope is approved yet.
+
+## Established results and evidence links
+None. See research/proof_ledger.md when claims are registered.
+
+## Failed candidate scopes
+None.
+
+## Smallest open gap and next discriminating test
+Approve the precise target and main route after primary-source comparison.
+
+## Active session
+None. Provisional work stays in the active session; it does not change this record.
 """,
     "research/problem.md": "# Problem specification\n\nStatus: draft.\n",
     "research/proof_ledger.md": "# Proof ledger\n\nNo claims registered.\n",
-    "research/proof_map.md": "# Proof map\n\nNo dependency graph registered.\n",
     "research/route_matrix.md": "# Route matrix\n\nNo routes approved.\n",
     "research/notation.md": "# Notation\n\nNo global notation approved.\n",
     "research/assumptions.md": "# Assumptions\n\nNo assumptions approved.\n",
-    "research/failed_approaches.md": "# Failed approaches\n\nNone registered.\n",
-    "research/research_log.md": "# Research log\n\n",
-    "research/task_index.md": "# Task index\n\nNo tasks registered.\n",
-    "research/open_questions.md": "# Open questions\n\n",
-    "research/baseline_checks.md": "# Baseline checks\n\n",
-    "research/core_difficulties.md": "# Core difficulties\n\n",
-    "research/objectives.md": "# Objectives\n\nSee `PROJECT_CHARTER.md`.\n",
 }
 
 
@@ -482,9 +509,12 @@ def write_candidate(*, target: Path, relative: str, content: str, mode: str,
         record_action(actions, relative, "unchanged")
         return True
     tracked_clean = previous_hash is not None and actual_hash == previous_hash
-    legacy_template = relative in FULL_TEMPLATE_FILES and previous_hash is None and mode in {"migrate", "upgrade"}
-    if (mode == "upgrade" and tracked_clean) or legacy_template:
-        detail = "replace versioned legacy template" if legacy_template else f"{actual_hash[:12]} -> {desired_hash[:12]}"
+    legacy_document = (
+        mode in {"upgrade", "migrate"} and previous_hash is None
+        and LEGACY_DOCUMENT_HASHES.get(relative) == actual_hash
+    )
+    if (mode == "upgrade" and tracked_clean) or legacy_document:
+        detail = f"{actual_hash[:12]} -> {desired_hash[:12]}"
         record_action(actions, relative, "update", detail)
         if apply:
             backup_file(destination, target, backup_root)
@@ -620,47 +650,6 @@ def upgrade_state_schema(*, target: Path, apply: bool, backup_root: Path,
     if apply:
         backup_file(path, target, backup_root)
         path.write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    return True
-
-
-def upgrade_workspace_roles(*, target: Path, apply: bool, backup_root: Path,
-                            actions: list[dict[str, str]]) -> bool:
-    relative = "research/machine/workspace-roles.json"
-    path = target / relative
-    if not path.exists():
-        record_action(actions, relative, "preserve", "role registry not yet created")
-        return True
-    safety_issue = destination_safety_issue(target, relative)
-    if safety_issue:
-        record_action(actions, relative, "conflict", f"unsafe destination: {safety_issue}")
-        return False
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        record_action(actions, relative, "conflict", f"cannot parse role registry: {exc}")
-        return False
-    version = value.get("schema_version")
-    if version == "1.1":
-        record_action(actions, relative, "unchanged", "role registry schema 1.1")
-        return True
-    if version != "1.0" or not isinstance(value.get("roles"), list):
-        record_action(actions, relative, "conflict", f"no registered role migration from {version!r} to '1.1'")
-        return False
-    expected_titles = {"director": "0 Director", "researcher": "1 Researcher", "critic": "2 Critic"}
-    roles = value["roles"]
-    if len(roles) != 3 or {item.get("role") for item in roles if isinstance(item, dict)} != set(expected_titles):
-        record_action(actions, relative, "conflict", "legacy role registry does not contain exactly the three known roles")
-        return False
-    migrated = copy.deepcopy(value)
-    migrated["schema_version"] = "1.1"
-    for record in migrated["roles"]:
-        role = record["role"]
-        record["title"] = expected_titles[role]
-        record["is_current_task"] = role == "director"
-    record_action(actions, relative, "update", "role registry 1.0 -> 1.1; preserve task identities")
-    if apply:
-        backup_file(path, target, backup_root)
-        path.write_text(json.dumps(migrated, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return True
 
 
@@ -822,7 +811,8 @@ def _operate_once(args: argparse.Namespace) -> int:
 
         state_path = target / "research/machine/project-state.json"
         state_mapping = "ready" if upgrade_state_schema(target=target, apply=apply, backup_root=backup_root, actions=actions) else "required"
-        upgrade_workspace_roles(target=target, apply=apply, backup_root=backup_root, actions=actions)
+        # Historical role registries are optional evidence of the old topology.
+        # Do not migrate, reconnect, or activate them during a single-window upgrade.
         if args.mode == "init" and not state_path.exists():
             record_action(actions, "research/machine/project-state.json", "create", "empty S0 mirror")
             if apply:
@@ -843,7 +833,7 @@ def _operate_once(args: argparse.Namespace) -> int:
         if apply:
             config = {"kernel_version": KERNEL_VERSION, "schema_version": SCHEMA_VERSION,
                       "installed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "source_hint": str(source_root),
-                      "source_library_id": identity["library_id"],
+                      "source_library_id": identity["library_id"], "execution_mode": "single_window",
                       "state_mapping": state_mapping, "managed_files": installed_hashes, "managed_blocks": block_hashes}
             config_file.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             report_path = target / report_relative

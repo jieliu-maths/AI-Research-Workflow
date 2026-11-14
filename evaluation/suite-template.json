@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "suite_id": "owner-history-comparison",
+  "purpose": "real_tasks",
+  "comparison": "matched_budget",
+  "budget": {
+    "max_seconds": 1800,
+    "max_cost_usd": null
+  },
+  "configurations": [
+    {
+      "id": "direct",
+      "model": "owner-selected model",
+      "reasoning_effort": "owner-selected effort",
+      "workflow": "direct single window"
+    },
+    {
+      "id": "feedback",
+      "model": "owner-selected model",
+      "reasoning_effort": "owner-selected effort",
+      "workflow": "single window with mathematical feedback"
+    }
+  ],
+  "cases": [],
+  "factor": "workflow"
+}

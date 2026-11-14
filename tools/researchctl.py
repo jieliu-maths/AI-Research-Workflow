@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
+import research_checks
 import re
 import shutil
 import subprocess
@@ -32,19 +34,20 @@ CORE_RESEARCH_FILES = (
     "STATE.md",
     "research/problem.md",
     "research/proof_ledger.md",
-    "research/proof_map.md",
     "research/route_matrix.md",
     "research/notation.md",
     "research/assumptions.md",
-    "research/open_questions.md",
-    "research/research_log.md",
 )
+OPTIONAL_RESEARCH_FILES = ("research/proof_map.md", "research/open_questions.md", "research/research_log.md")
 RUNS_PATH = ROOT / "runs"
 WORKSPACE_ROLES_PATH = ROOT / "research" / "machine" / "workspace-roles.json"
-WORKSPACE_ROLES_TEMPLATE_PATH = ROOT / "research" / "machine" / "_template" / "workspace-roles.json"
 SIDECAR_SCHEMAS = (
     ROOT / "schemas" / "run-manifest.schema.json",
     ROOT / "schemas" / "task-evidence.schema.json",
+    ROOT / "schemas" / "critical-review.schema.json",
+    ROOT / "schemas" / "claim-evidence.schema.json",
+    ROOT / "schemas" / "check-plan.schema.json",
+    ROOT / "schemas" / "check-result.schema.json",
     ROOT / "schemas" / "state-transition.schema.json",
     ROOT / "schemas" / "state-mapping-proposal.schema.json",
     ROOT / "schemas" / "run-hydration-proposal.schema.json",
@@ -53,23 +56,19 @@ SIDECAR_SCHEMAS = (
     ROOT / "schemas" / "route-review.schema.json",
 )
 TEMPLATE_CONTRACTS = {
-    "runs/_template/brief.md": ("template_version: 2.4.0", "state_in:", "theorem_targets:", "machine_record:", "orchestration_record:", "route_approval_reference:", "route_id:", "## Candidate preflight plan"),
-    "runs/_template/task-brief.md": ("template_version: 2.4.0", "strict_prerequisites:", "non_strict_links:", "blocking_reason:", "evidence_class:", "derivation_roots:", "independence_from:", "machine_record:", "dispatch_sha256:", "route_id:", "candidate_class:", "canonical_topology:", "quotient_dependencies:", "scaling_regime:", "stress_tests:", "symbol_scope:"),
-    "runs/_template/learning-note-Txxx.md": ("template_version: 2.4.0", "## Mathematical objective", "## Decisive formula", "## Proof consequence", "## Cheapest reusable preflight tests", "## What remains unresolved"),
-    "runs/_template/status.md": ("template_version: 2.4.0", "Proof items", "Strict prerequisites", "Non-strict links", "Evidence class", "Machine record", "Gate", "Authoritative decision artifact", "director_state:", "route_signal:", "Route evidence review trigger"),
-    "runs/_template/amendments.md": ("template_version: 2.4.0", "evidence and SHA-256", "derivation roots", "machine record", "human authorization"),
-    "runs/_template/resolution-Txxx.md": ("template_version: 2.4.0", "researcher_sha256:", "critic_sha256:", "derivation_roots:", "machine_record:", "## Candidate scope after correction"),
-    "runs/_template/state_update_proposal.md": ("template_version: 2.4.0", "state_from:", "state_to_proposed:", "owner_approval_reference:", "## Proposed claim changes", "## Proposed route changes"),
-    "runs/_template/director-run-summary.md": ("template_version: 2.4.0", "## Current theorem target", "## Decisive formula", "## Consequence for the proof map", "## Candidate scope and unexcluded alternatives", "## What remains open", "## Route evidence assessment", "## Owner approvals requested"),
-    "runs/_template/route-review.md": ("template_version: 2.4.0", "## Original route thesis", "## Researcher synthesis", "## Systematic literature refresh driven by the obstruction", "## Independent Critic assessment", "## Director recommendation", "## Owner decision required"),
+    "runs/_template/brief.md": ("template_version: 3.1.0", "state_in:", "route_approval_reference:", "route_id:", "## Candidate preflight plan"),
+    "runs/_template/work.md": ("## Work and cheap discriminating tests", "## Closing mathematical summary"),
+    "runs/_template/state_update_proposal.md": ("## Exact before and proposed after", "## Frozen evidence and independent review", "## Remaining gaps and owner decision"),
+    "runs/_template/route-review.md": ("## Original route thesis and exact obstruction", "## Systematic literature refresh driven by the obstruction", "## Independent assessment", "## Owner decision required"),
     "research/machine/_template/project-state.proposal.json": ('"status": "proposal_only"', '"unresolved_mappings"', '"candidate_state"'),
-    "research/machine/_template/workspace-roles.json": ('"schema_version": "1.1"', '"topology": "peer_tasks"', '"shared_project_directory": true', '"title": "0 Director"', '"title": "1 Researcher"', '"title": "2 Critic"', '"is_current_task": true'),
 }
+
 
 SCHEMA_BY_KIND = {
     "state": ROOT / "schemas" / "research-state.schema.json",
     "manifest": ROOT / "schemas" / "run-manifest.schema.json",
     "task": ROOT / "schemas" / "task-evidence.schema.json",
+    "critical_review": ROOT / "schemas" / "critical-review.schema.json",
     "transition": ROOT / "schemas" / "state-transition.schema.json",
     "mapping": ROOT / "schemas" / "state-mapping-proposal.schema.json",
     "hydration": ROOT / "schemas" / "run-hydration-proposal.schema.json",
@@ -215,6 +214,16 @@ def _schema_errors(
         errors.append(f"{location}: expected constant {schema['const']!r}")
     if "enum" in schema and value not in schema["enum"]:
         errors.append(f"{location}: value {value!r} is not allowed")
+
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if not math.isfinite(value):
+            errors.append(f"{location}: number must be finite")
+        for keyword, invalid in (("minimum", lambda bound: value < bound),
+                                 ("maximum", lambda bound: value > bound),
+                                 ("exclusiveMinimum", lambda bound: value <= bound),
+                                 ("exclusiveMaximum", lambda bound: value >= bound)):
+            if keyword in schema and invalid(schema[keyword]):
+                errors.append(f"{location}: violates {keyword} {schema[keyword]}")
 
     if isinstance(value, str):
         if len(value) < schema.get("minLength", 0):
@@ -385,17 +394,22 @@ def validate_sidecar_schemas(issues: list[dict[str, str]]) -> None:
 
 def validate_run_manifest(value: dict[str, Any], path: Path, issues: list[dict[str, str]], *, template: bool = False) -> None:
     validate_json_schema(value, SCHEMA_BY_KIND["manifest"], issues, "MANIFEST_SCHEMA_RULE", str(path.relative_to(ROOT)))
-    required = {"schema_version", "run_id", "route_id", "state_in", "status", "brief", "route_approval_reference", "task_records", "director_summary", "state_transition"}
+    required = {"schema_version", "run_id", "route_id", "state_in", "status", "brief", "route_approval_reference", "task_records", "state_transition"}
     version = value.get("schema_version")
-    if version == "1.1" or template:
-        required |= {"orchestration", "route_signal", "route_review"}
+    if version == "1.1":
+        required |= {"director_summary", "orchestration", "route_signal", "route_review"}
+    elif version in {"1.2", "1.3"}:
+        required |= {"summary", "route_signal", "route_review", "critical_review_required"}
+        required |= {"critical_review"} if version == "1.2" else {"meaning_audit", "progress"}
+    else:
+        required.add("director_summary")
     for field in sorted(required - value.keys()):
         add_issue(issues, "error", "MANIFEST_FIELD", f"{path.relative_to(ROOT)}: missing {field}")
     run_id, route_id, status = value.get("run_id"), value.get("route_id"), value.get("status")
     if version == "1.0" and not template:
         add_issue(issues, "warning", "MANIFEST_LEGACY_SCHEMA", f"{path.relative_to(ROOT)}: v1.0 has no Director orchestration or route signal")
-    elif version != "1.1":
-        add_issue(issues, "error", "MANIFEST_SCHEMA", f"{path.relative_to(ROOT)}: expected manifest schema 1.1")
+    elif version not in {"1.1", "1.2", "1.3"}:
+        add_issue(issues, "error", "MANIFEST_SCHEMA", f"{path.relative_to(ROOT)}: expected manifest schema 1.0 through 1.3")
     if not isinstance(run_id, str) or not re.fullmatch(r"R[0-9]+", run_id):
         add_issue(issues, "error", "MANIFEST_ID", f"{path.relative_to(ROOT)}: invalid schema_version or run_id")
     if route_id is not None and (not isinstance(route_id, str) or not re.fullmatch(r"route:[A-Za-z0-9][A-Za-z0-9._-]*", route_id)):
@@ -416,14 +430,16 @@ def validate_run_manifest(value: dict[str, Any], path: Path, issues: list[dict[s
     else:
         for record in task_records:
             check_maybe_hashed_file(record, issues, "MANIFEST_TASK", require_hash=True, check_path=not template)
-    for field, code in (("director_summary", "MANIFEST_SUMMARY"), ("state_transition", "MANIFEST_TRANSITION")):
+    for field, code in (("director_summary", "MANIFEST_SUMMARY"), ("summary", "MANIFEST_SUMMARY"), ("state_transition", "MANIFEST_TRANSITION"), ("critical_review", "MANIFEST_CRITICAL_REVIEW")):
         record = value.get(field)
         if record is not None:
             check_maybe_hashed_file(record, issues, code, require_hash=True, check_path=not template)
-    if status == "completed" and not template and value.get("director_summary") is None:
-        add_issue(issues, "error", "MANIFEST_COMPLETION", f"{path.relative_to(ROOT)}: completed run lacks Director summary")
+    summary_key = "summary" if version in {"1.2", "1.3"} else "director_summary"
+    if status == "completed" and not template and value.get(summary_key) is None:
+        add_issue(issues, "error", "MANIFEST_COMPLETION", f"{path.relative_to(ROOT)}: completed run lacks a mathematical summary")
     if version == "1.1":
         check_path_reference(value.get("orchestration"), issues, "MANIFEST_ORCHESTRATION", check_path=not template)
+    if version in {"1.1", "1.2", "1.3"}:
         signal = value.get("route_signal")
         allowed_signals = {"not_assessed", "decisive_support", "partial_support", "null_result", "scoped_obstruction", "structural_failure", "not_applicable"}
         if signal not in allowed_signals:
@@ -433,6 +449,98 @@ def validate_run_manifest(value: dict[str, Any], path: Path, issues: list[dict[s
         review = value.get("route_review")
         if review is not None:
             check_path_reference(review, issues, "MANIFEST_ROUTE_REVIEW", check_path=not template)
+
+
+def validate_critical_review(value: dict[str, Any], path: Path, issues: list[dict[str, str]], *, template: bool = False) -> None:
+    validate_json_schema(value, SCHEMA_BY_KIND["critical_review"], issues, "CRITICAL_REVIEW_SCHEMA", str(path.relative_to(ROOT)))
+    for field in ("question", "baseline", "candidate", "assessment"):
+        check_maybe_hashed_file(value.get(field), issues, "CRITICAL_REVIEW_" + field.upper(), require_hash=True, check_path=not template)
+    if value.get("review_kind") == "independent":
+        if value.get("baseline_frozen_before_candidate") is not True:
+            add_issue(issues, "error", "CRITICAL_REVIEW_ORDER", f"{path.relative_to(ROOT)}: independent review requires a frozen baseline before candidate disclosure")
+        paths = [value.get(field, {}).get("path") for field in ("question", "baseline", "candidate", "assessment") if isinstance(value.get(field), dict)]
+        if len(paths) != 4 or len(set(paths)) != 4:
+            add_issue(issues, "error", "CRITICAL_REVIEW_SEPARATION", f"{path.relative_to(ROOT)}: question, baseline, candidate, and comparison must be distinct artifacts")
+
+
+def validate_critical_gate(manifest: dict[str, Any], directory: Path, issues: list[dict[str, str]], *, promotion: bool = False) -> None:
+    """Check declared evidence and scope; metadata cannot certify isolation or truth."""
+    required = promotion or manifest.get("route_signal") == "decisive_support" or (
+        manifest.get("critical_review_required") is True and manifest.get("status") == "completed"
+    )
+    record = manifest.get("critical_review")
+    if record is None:
+        if required:
+            add_issue(issues, "error", "CRITICAL_REVIEW_REQUIRED", f"{directory.relative_to(ROOT)}: key evidence or formal claim changes need an independent review")
+        return
+    path = project_path(record.get("path", "")) if isinstance(record, dict) else None
+    if path is None or not path.is_file():
+        return  # the manifest reference check reports the path/hash failure
+    try:
+        review = load_json(path)
+    except SystemExit as exc:
+        add_issue(issues, "error", "CRITICAL_REVIEW_JSON", str(exc))
+        return
+    validate_critical_review(review, path, issues)
+    if review.get("run_id") != manifest.get("run_id"):
+        add_issue(issues, "error", "CRITICAL_REVIEW_LINK", f"{path.relative_to(ROOT)}: review belongs to a different run")
+    if required and review.get("review_kind") != "independent":
+        add_issue(issues, "error", "CRITICAL_REVIEW_SELF_CHECK", f"{path.relative_to(ROOT)}: self-check is not independent evidence")
+    if (promotion or manifest.get("route_signal") == "decisive_support") and review.get("verdict") != "survives_current_attacks":
+        add_issue(issues, "error", "CRITICAL_REVIEW_UNRESOLVED", f"{path.relative_to(ROOT)}: disputed evidence cannot support promotion or decisive support")
+    # One question per session: the final integrated work is the reviewed candidate.
+    # This prevents reuse of an older review after a substantive repair.
+    if manifest.get("summary") is not None and review.get("candidate") != manifest.get("summary"):
+        add_issue(issues, "error", "CRITICAL_REVIEW_CANDIDATE", f"{path.relative_to(ROOT)}: review does not cover the frozen final work artifact")
+
+
+def transition_requires_review(value: dict[str, Any]) -> bool:
+    changes = value.get("changes", {})
+    if not isinstance(changes, dict):
+        return False  # the transition schema reports malformed changes
+    if changes.get("manuscript"):
+        return True
+    provisional = {"open", "conditional", "conjectural", "formal", "numerical", "deferred", "selected_unverified", "manuscript_unaudited"}
+    for change in changes.get("claims", []):
+        if not isinstance(change, dict):
+            return True
+        after = change.get("after", {})
+        before = change.get("before", {})
+        status = change.get("status", after.get("status") if isinstance(after, dict) else after)
+        previous = before.get("status") if isinstance(before, dict) else before
+        # Explicit provisional planning entries are not claimed proof-gap closures.
+        # Unknown change forms and changes to established conclusions fail closed.
+        if not isinstance(status, str) or status not in provisional or (isinstance(previous, str) and previous in RESOLVED_CLAIM_STATUSES):
+            return True
+    return False
+
+
+def validate_transition_evidence(manifest: dict[str, Any], transition: dict[str, Any], directory: Path, issues: list[dict[str, str]]) -> None:
+    """New formal changes cite frozen local evidence; old records stay unchanged."""
+    evidence_ids = transition.get("evidence_records", [])
+    indexed = manifest.get("task_records", [])
+    if not evidence_ids or not isinstance(indexed, list):
+        add_issue(issues, "error", "TRANSITION_EVIDENCE_REQUIRED", f"{directory.relative_to(ROOT)}: formal changes need indexed durable evidence")
+        return
+    records: dict[str, dict[str, Any]] = {}
+    for reference in indexed:
+        path = project_path(reference.get("path", "")) if isinstance(reference, dict) else None
+        if path is None or not path.is_file() or path.parent != directory or not re.fullmatch(r"T[0-9]+", path.stem):
+            continue
+        try:
+            task = load_json(path)
+        except SystemExit:
+            continue  # other checks report invalid JSON
+        records[path.stem] = task
+    for evidence_id in evidence_ids:
+        task = records.get(evidence_id) if isinstance(evidence_id, str) else None
+        if task is None:
+            add_issue(issues, "error", "TRANSITION_EVIDENCE_LINK", f"{directory.relative_to(ROOT)}: {evidence_id!r} is not a manifest-indexed local evidence task ID")
+            continue
+        if task.get("artifact") != manifest.get("summary") or not task.get("derivation_roots"):
+            add_issue(issues, "error", "TRANSITION_EVIDENCE_SCOPE", f"{directory.relative_to(ROOT)}: {evidence_id} needs the reviewed final artifact and its derivation roots")
+        if task.get("status") in {"planned", "dispatched", "critic_pending"} or task.get("verdict") in {"uncertain", "proposal_only"}:
+            add_issue(issues, "error", "TRANSITION_EVIDENCE_PENDING", f"{directory.relative_to(ROOT)}: {evidence_id} remains pending")
 
 
 def validate_task_record(value: dict[str, Any], path: Path, issues: list[dict[str, str]], *, template: bool = False) -> None:
@@ -658,27 +766,26 @@ def validate_route_review(
             check_maybe_hashed_file(decision_artifact, issues, "ROUTE_REVIEW_DECISION", require_hash=True, check_path=not template)
 
 
-def validate_run_sidecars(issues: list[dict[str, str]]) -> None:
+def validate_run_sidecars(issues: list[dict[str, str]], registered_manifests: set[Path]) -> None:
     validate_sidecar_schemas(issues)
-    try:
-        workspace_template = load_json(WORKSPACE_ROLES_TEMPLATE_PATH)
-    except SystemExit as exc:
-        add_issue(issues, "error", "WORKSPACE_ROLE_TEMPLATE", str(exc))
-    else:
-        validate_workspace_roles(workspace_template, WORKSPACE_ROLES_TEMPLATE_PATH, issues, template=True)
+    # Role registries describe the retired execution topology. Diagnose them as
+    # historical metadata, never as prerequisites for present mathematical work.
     if WORKSPACE_ROLES_PATH.is_file():
+        legacy_issues: list[dict[str, str]] = []
         try:
             workspace_roles = load_json(WORKSPACE_ROLES_PATH)
         except SystemExit as exc:
-            add_issue(issues, "error", "WORKSPACE_ROLE_JSON", str(exc))
+            add_issue(legacy_issues, "warning", "WORKSPACE_ROLE_JSON", str(exc))
         else:
-            validate_workspace_roles(workspace_roles, WORKSPACE_ROLES_PATH, issues)
-    else:
-        add_issue(issues, "warning", "WORKSPACE_ROLES_MISSING", "research/machine/workspace-roles.json is absent; the three peer role tasks have not been registered")
+            validate_workspace_roles(workspace_roles, WORKSPACE_ROLES_PATH, legacy_issues)
+        for issue in legacy_issues:
+            if issue["code"] != "WORKSPACE_ROLES_UNBOUND":
+                add_issue(issues, "warning", "LEGACY_" + issue["code"], issue["message"])
     templates = ((RUNS_PATH / "_template" / "manifest.json", validate_run_manifest),
                  (RUNS_PATH / "_template" / "Txxx.json", validate_task_record),
                  (RUNS_PATH / "_template" / "state-transition.json", validate_state_transition),
-                 (RUNS_PATH / "_template" / "orchestration.json", validate_orchestration),
+                 (RUNS_PATH / "_template" / "legacy" / "orchestration.json", validate_orchestration),
+                 (RUNS_PATH / "_template" / "review.json", validate_critical_review),
                  (RUNS_PATH / "_template" / "route-review.json", validate_route_review))
     for path, validator in templates:
         try:
@@ -686,7 +793,7 @@ def validate_run_sidecars(issues: list[dict[str, str]]) -> None:
         except SystemExit as exc:
             add_issue(issues, "error", "SIDECAR_TEMPLATE", str(exc))
             continue
-        if validator in {validate_run_manifest, validate_task_record, validate_route_review}:
+        if validator in {validate_run_manifest, validate_task_record, validate_route_review, validate_critical_review}:
             validator(value, path, issues, template=True)
         else:
             validator(value, path, issues)
@@ -696,6 +803,8 @@ def validate_run_sidecars(issues: list[dict[str, str]]) -> None:
     route_all_runs: dict[str, list[tuple[int, str, str]]] = {}
     route_reviews: dict[str, list[dict[str, Any]]] = {}
     seen_review_paths: set[Path] = set()
+    versioned_sessions: list[tuple[Path, dict]] = []
+    information_by_run: dict[str, dict] = {}
     for directory in sorted(path for path in RUNS_PATH.iterdir() if path.is_dir() and path.name != "_template"):
         match = re.search(r"(R[0-9]+)$", directory.name)
         hydration = directory / "run-hydration.proposal.json"
@@ -717,10 +826,28 @@ def validate_run_sidecars(issues: list[dict[str, str]]) -> None:
         except SystemExit as exc:
             add_issue(issues, "error", "MANIFEST_JSON", str(exc))
             continue
+        # Older editing/delivery records can share the filename. Recognize the
+        # documented legacy shape without exempting malformed research manifests.
+        research_fields = {"schema_version", "run_id", "route_id", "state_in", "task_records",
+                           "state_transition", "claim_records", "critical_reviews"}
+        if (manifest not in registered_manifests
+                and research_fields.isdisjoint(value)
+                and isinstance(value.get("result"), str)
+                and type(value.get("pages")) is int
+                and isinstance(value.get("deliveries"), dict)
+                and not (directory / "state-transition.json").exists()
+                and not any(directory.glob("T[0-9]*.json"))):
+            add_issue(issues, "warning", "LEGACY_DELIVERY_MANIFEST",
+                      f"{manifest.relative_to(ROOT)}: historical delivery record; excluded from run evidence")
+            continue
         validate_run_manifest(value, manifest, issues)
         if match and value.get("run_id") != match.group(1):
             add_issue(issues, "error", "MANIFEST_DIRECTORY_ID", f"{manifest.relative_to(ROOT)}: run_id disagrees with directory")
         run_id, route_id = value.get("run_id"), value.get("route_id")
+        if value.get("schema_version") == "1.3":
+            versioned_sessions.append((directory, value))
+            if isinstance(run_id, str) and isinstance(value.get("progress"), dict):
+                information_by_run[run_id] = value["progress"]
         if isinstance(route_id, str) and re.fullmatch(r"R[0-9]+", str(run_id or "")):
             route_all_runs.setdefault(route_id, []).append((int(str(run_id)[1:]), str(run_id), str(value.get("status", ""))))
         if value.get("schema_version") == "1.1":
@@ -739,6 +866,7 @@ def validate_run_sidecars(issues: list[dict[str, str]]) -> None:
                         add_issue(issues, "error", "ORCHESTRATION_COMPLETION", f"{orchestration_path.relative_to(ROOT)}: completed manifest requires closed Director state")
                     if value.get("status") == "gated" and orchestration.get("director_state") != "owner_gate":
                         add_issue(issues, "error", "ORCHESTRATION_GATE_LINK", f"{orchestration_path.relative_to(ROOT)}: gated manifest requires owner_gate Director state")
+        if value.get("schema_version") in {"1.1", "1.2", "1.3"}:
             review_record = value.get("route_review")
             review_path = check_path_reference(review_record, issues, "ROUTE_REVIEW", check_path=True) if review_record is not None else None
             if review_path and review_path.is_file() and review_path not in seen_review_paths:
@@ -764,16 +892,31 @@ def validate_run_sidecars(issues: list[dict[str, str]]) -> None:
             validate_task_record(task, task_path, issues)
             if task.get("run_id") != value.get("run_id") or task.get("task_id") != task_path.stem:
                 add_issue(issues, "error", "TASK_RECORD_LINK", f"{task_path.relative_to(ROOT)}: identifiers disagree with manifest or filename")
-        transition = directory / "state-transition.json"
-        if transition.is_file():
+        if value.get("schema_version") == "1.2":
+            validate_critical_gate(value, directory, issues)
+        transitions = {directory / "state-transition.json"}
+        reference = value.get("state_transition")
+        if isinstance(reference, dict) and isinstance(reference.get("path"), str):
+            referenced = project_path(reference["path"])
+            if referenced is not None:
+                transitions.add(referenced)
+        for transition in sorted(transitions):
+            if not transition.is_file():
+                continue
             try:
                 transition_value = load_json(transition)
             except SystemExit as exc:
                 add_issue(issues, "error", "TRANSITION_JSON", str(exc))
-            else:
-                validate_state_transition(transition_value, transition, issues)
-                if transition_value.get("run_id") != value.get("run_id"):
-                    add_issue(issues, "error", "TRANSITION_LINK", f"{transition.relative_to(ROOT)}: run_id disagrees with manifest")
+                continue
+            validate_state_transition(transition_value, transition, issues)
+            if value.get("schema_version") == "1.2":
+                if transition_requires_review(transition_value):
+                    validate_critical_gate(value, directory, issues, promotion=True)
+                    validate_transition_evidence(value, transition_value, directory, issues)
+            if transition_value.get("run_id") != value.get("run_id"):
+                add_issue(issues, "error", "TRANSITION_LINK", f"{transition.relative_to(ROOT)}: run_id disagrees with manifest")
+
+    research_checks.validate_project(versioned_sessions, issues, sys.modules[__name__])
 
     for route_id, entries in route_history.items():
         entries.sort()
@@ -787,11 +930,20 @@ def validate_run_sidecars(issues: list[dict[str, str]]) -> None:
         consecutive: list[str] = []
         trigger_runs: list[str] = []
         due_at = -1
+        previous_no_information: str | None = None
         for number, run_id, signal in entries:
             if number <= cutoff:
                 continue
             if due_at >= 0:
                 continue
+            information = information_by_run.get(run_id, {})
+            if information.get("kind") == "none":
+                if previous_no_information is not None:
+                    trigger_runs = [previous_no_information, run_id]
+                    due_at = number
+                previous_no_information = run_id
+            else:
+                previous_no_information = None
             if signal == "decisive_support":
                 consecutive = []
             elif signal in {"partial_support", "null_result", "scoped_obstruction"}:
@@ -987,6 +1139,7 @@ def validate_state(state: dict[str, Any]) -> list[dict[str, str]]:
             )
 
     runs: dict[str, dict[str, Any]] = {}
+    registered_manifests: set[Path] = set()
     for run in run_list:
         if not isinstance(run, dict):
             add_issue(issues, "error", "RUN_RECORD", "run record is not an object")
@@ -1005,7 +1158,16 @@ def validate_state(state: dict[str, Any]) -> list[dict[str, str]]:
         if route_id is not None and route_id not in routes:
             add_issue(issues, "error", "RUN_ROUTE_MISSING", f"{run_id}: unknown route {route_id}")
         if "manifest" in run:
-            check_hashed_file(run["manifest"], issues, "RUN_MANIFEST")
+            reference = run["manifest"]
+            if not isinstance(reference, dict):
+                add_issue(issues, "error", "RUN_MANIFEST_RECORD", f"{run_id}: manifest must be a hashed reference")
+                continue
+            check_hashed_file(reference, issues, "RUN_MANIFEST")
+            relative = reference.get("path")
+            if isinstance(relative, str) and relative:
+                manifest_path = project_path(relative)
+                if manifest_path is not None:
+                    registered_manifests.add(manifest_path)
 
     snapshot = state.get("snapshot", {})
     theorem_targets = snapshot.get("theorem_targets")
@@ -1053,14 +1215,11 @@ def validate_state(state: dict[str, Any]) -> list[dict[str, str]]:
         if target not in claims:
             add_issue(issues, "error", "EDGE_TARGET_MISSING", f"unknown edge target {target}")
 
-    validate_run_sidecars(issues)
-    report_paths = (REPORT_MD_PATH, REPORT_TEX_PATH, REPORT_PDF_PATH)
-    if not all(path.is_file() for path in report_paths):
-        add_issue(issues, "warning", "READABLE_REPORT_MISSING", "the consolidated Markdown, LaTeX, and PDF research summary has not yet been generated")
-    else:
-        newest_source = max((ROOT / relative).stat().st_mtime for relative in CORE_RESEARCH_FILES if (ROOT / relative).is_file())
-        if any(path.stat().st_mtime < newest_source for path in report_paths):
-            add_issue(issues, "warning", "READABLE_REPORT_STALE", "the readable research summary predates a core mathematical file")
+    validate_run_sidecars(issues, registered_manifests)
+    if REPORT_MD_PATH.is_file():
+        sources = [(ROOT / relative).stat().st_mtime for relative in CORE_RESEARCH_FILES + OPTIONAL_RESEARCH_FILES if (ROOT / relative).is_file()]
+        if sources and REPORT_MD_PATH.stat().st_mtime < max(sources):
+            add_issue(issues, "warning", "READABLE_REPORT_STALE", "the optional Markdown reading copy predates a core mathematical file")
     return issues
 
 
@@ -1274,17 +1433,21 @@ def _markdown_to_latex(text: str) -> list[str]:
     return output
 
 
-def command_report() -> int:
+def command_report(output_format: str = "md") -> int:
     missing = [relative for relative in CORE_RESEARCH_FILES if not (ROOT / relative).is_file()]
     if missing:
         print("cannot build the research summary; missing: " + ", ".join(missing), file=sys.stderr)
         return 1
-    sections = [(relative, (ROOT / relative).read_text(encoding="utf-8")) for relative in CORE_RESEARCH_FILES]
+    reading_files = CORE_RESEARCH_FILES + tuple(relative for relative in OPTIONAL_RESEARCH_FILES if (ROOT / relative).is_file())
+    sections = [(relative, (ROOT / relative).read_text(encoding="utf-8")) for relative in reading_files]
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     md = ["# Consolidated mathematical research summary", "", "This document gathers the current core mathematical record. Authority remains with the source files named below.", ""]
     for relative, content in sections:
         md.extend([f"## {relative}", "", content.rstrip(), ""])
     REPORT_MD_PATH.write_text("\n".join(md).rstrip() + "\n", encoding="utf-8")
+    if output_format == "md":
+        print(REPORT_MD_PATH)
+        return 0
     tex = [
         r"\documentclass[11pt]{article}",
         r"\usepackage[margin=1in]{geometry}",
@@ -1304,6 +1467,10 @@ def command_report() -> int:
         tex.extend(_markdown_to_latex(content.rstrip()))
     tex.append(r"\end{document}")
     REPORT_TEX_PATH.write_text("\n".join(tex) + "\n", encoding="utf-8")
+    if output_format == "tex":
+        print(REPORT_MD_PATH)
+        print(REPORT_TEX_PATH)
+        return 0
     engine = shutil.which("xelatex")
     if not engine:
         print(f"wrote {REPORT_MD_PATH} and {REPORT_TEX_PATH}; xelatex is required to generate the PDF", file=sys.stderr)
@@ -1329,12 +1496,15 @@ def main() -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("validate", help="check schema invariants, references, hashes, and DAG")
     subparsers.add_parser("summary", help="print the machine-state summary")
+    affected_parser = subparsers.add_parser("affected", help="show transitive dependents requiring consideration after a claim change; never edits state")
+    affected_parser.add_argument("claim_id")
     status_parser = subparsers.add_parser("status", help="show one proof claim")
     status_parser.add_argument("claim_id")
     blockers_parser = subparsers.add_parser("blockers", help="show the blocking dependency closure")
     blockers_parser.add_argument("claim_id")
     subparsers.add_parser("dashboard", help="validate and rebuild dashboard/index.html")
-    subparsers.add_parser("report", help="generate the consolidated Markdown, LaTeX, and PDF research summary")
+    report_parser = subparsers.add_parser("report", help="generate an optional reading copy (Markdown by default)")
+    report_parser.add_argument("--format", choices=("md", "tex", "pdf"), default="md", help="PDF requires XeLaTeX; tex also writes Markdown")
     proposal_parser = subparsers.add_parser("validate-proposal", help="validate a non-canonical state-mapping proposal")
     proposal_parser.add_argument("path", nargs="?", default=str(PROPOSAL_PATH))
     preview_parser = subparsers.add_parser("dashboard-proposal", help="build a visibly non-canonical proposal preview")
@@ -1357,12 +1527,15 @@ def main() -> int:
         )
 
     if args.command == "report":
-        return command_report()
+        return command_report(args.format)
 
     state = load_json(STATE_PATH)
     issues = validate_state(state)
     if args.command == "validate":
         return print_validation(issues)
+    if args.command == "affected":
+        print(json.dumps({"claim_id": args.claim_id, "dependent_claims": research_checks.affected(state, args.claim_id), "canonical_state_changed": False}, indent=2))
+        return 1 if any(issue["severity"] == "error" for issue in issues) else 0
     if args.command == "summary":
         return command_summary(state, issues)
     if args.command == "status":

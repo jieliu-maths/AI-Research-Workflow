@@ -1,95 +1,86 @@
 # Reuse and upgrades
 
-The workflow is split into two layers.
-
-- The **kernel** contains the validator, JSON Schemas, dashboard template,
-  project skill, versioned run templates, and versioned documentation blocks.
-  It may be copied or upgraded mechanically.
-- The **project state** contains the charter, mathematical guardrails, claims,
-  routes, evidence, hashes, run history, and generated dashboard. It must be
-  initialized or reviewed separately and is never copied from another project.
-
-There is also a host-level runtime layer. `workflowctl` installs files but does
-not create Codex UI tasks. The owner-facing task becomes `0 Director`; a
-user-authorized prompt creates or reconnects the two top-level peers
-`1 Researcher` and `2 Critic` and records all three identifiers in
-`research/machine/workspace-roles.json`. That registry is
-operational metadata, not canonical mathematical state. It is safe to replace
-stale task identifiers after review, but it cannot carry claim or route
-approvals.
+Kernel 3.1 defaults to one research window, light records, and on-demand key
+review. Installation creates files only; it does not create, rename, reconnect,
+or wait for Codex tasks. Historical role registries remain untouched and are
+diagnosed as historical metadata if present; any diagnostics are warnings,
+never prerequisites for current research. Their absence is normal.
 
 ## Safe lifecycle
 
-Run `python3 tools/workflowctl.py <mode> <target>` without `--apply` first. The
-default is a preview. Use `--apply` only after checking the resolved target,
-planned writes, conflicts, and state-mapping requirement.
+Use a verified standalone library: `.research-workflow-library.json` has kind
+`standalone-proof-ledger-research-workflow-library` and library ID
+`ai-research-workflow-kernel`; `workflow identify` and `workflow self-check`
+must pass; the source must not contain `.research-workflow.json`.
+The installed `source_hint` is an untrusted fallback candidate. If a portable
+prompt still has `<WORKFLOW_LIBRARY>`, resolve a unique saved source project or
+ask for its path; never guess or use a mathematical project as the library.
 
-- `init`: create missing canonical skeletons and an empty S0 machine mirror.
-- `migrate`: preserve an older project's canonical files, install the kernel,
-  and write a report of detected claim and route IDs. If no reviewed machine
-  mirror exists, the report requires a semantic mapping pass before ordinary
-  validation can succeed.
-- `upgrade`: perform a no-write preflight, then replace only kernel files that
-  still match their installed hash. Replace a marked documentation block only
-  when its own recorded hash still matches. A local edit outside a block is
-  project-owned; a locally changed managed block or kernel file is a conflict.
-  Whole run templates are upgraded, while instantiated runs are never rewritten.
-- `hydrate-run`: hash one historical run and write only a proposal inventory.
-  State input, route identity, task verdicts, derivation roots, and transitions
-  remain unresolved until human review; the command never materializes
-  canonical sidecars.
-- `self-check`: verify the standalone kernel source, schemas, managed blocks,
-  project neutrality, and automated tests without requiring project state.
+Preview `workflow init TARGET`, `migrate TARGET`, or `upgrade TARGET`, then use
+`--apply` after reviewing target, conflicts, and authorization. Apply repeats
+preflight and rolls back known targets on write failure. Refuse destination
+symlinks and linked ancestors. Never overwrite canonical mathematics, raw
+submitted evidence, or instantiated runs.
 
-Kernel 2.3 added a host-return loop and a route-review control layer. New runs
-carry `orchestration.json` plus a route signal in `manifest.json`. A mandatory
-route review uses `route-review.md` and `route-review.json`; these are
-operational evidence summaries and decision proposals, not canonical route
-decisions. Existing instantiated runs remain untouched and may be hydrated only
-through the proposal-only path.
+New projects receive only the small canonical skeleton and empty S0 mirror.
+Detailed proof maps, logs, and specialized notes are optional, with links
+instead of duplicated mathematical assertions. Managed run templates include
+conditional evidence/review/transition templates; copy only the three ordinary
+session files. Retired dispatch templates live under `_template/legacy/`.
 
-Kernel 2.5 makes the workflow source a standalone repository. Projects are
-installed or upgraded through its `workflow` launcher, so no target project
-depends on the source path, mathematical state, or generated dashboard of the
-project from which the kernel was originally developed.
+## Upgrading from 2.x
 
-Kernel 2.6 makes schema constraints executable, rejects writes through linked
-destination ancestors, migrates the role registry to the fixed three-task
-titles, requires a literature refresh inside route review, and generates
-consolidated Markdown, LaTeX, and PDF reading copies.
+Manifest schema 1.2 adds a summary reference and key-review gate without
+orchestration. Old v1.0/v1.1 runs and task records remain accepted with their
+original constraints; do not silently rewrite them. The project-state schema
+remains 2.1. No claim statuses, route decisions, or evidence meanings migrate.
 
-Kernel 2.6.1 keeps `<WORKFLOW_LIBRARY>` only in the portable source prompt. On
-`init`, `migrate`, or `upgrade`, the installed project copy is rendered with
-the actual absolute source path. When operating from an older prompt that still
-contains the placeholder, use the Codex saved-project list and accept only a
-unique standalone repository whose identity and integrity checks pass.
+WORKFLOW.md and optional activity guides are now whole managed documents, so
+an upgrade cannot leave mandatory three-role prose between managed blocks.
+An exact shipped v2.7.0 document can be recognized by its recorded checksum and
+adopted, with backup. Other preexisting or locally modified documents conflict;
+merge project-specific guardrails deliberately. AGENTS.md keeps managed
+operational blocks and preserves project-owned guardrails. New governing
+blocks explicitly supersede retired operational requirements in preserved text.
 
-Kernel 2.6.2 adds a source-only `.research-workflow-library.json` marker and
-`workflow identify`. Installed mathematical projects never receive this
-marker. A candidate library must have the expected kind and stable library ID,
-must pass both `workflow identify` and `workflow self-check`, and must not have
-its own `.research-workflow.json`. Treat a legacy project's `source_hint` only
-as an untrusted fallback candidate subject to those checks. Never guess a path
-or treat a mathematical project as the reusable kernel.
+Unmodified managed files are replaced, modified ones conflict, and old
+instantiated runs and role registries remain byte-for-byte preserved. Preview
+and apply must agree; no partial change is accepted on conflict. Historical
+root-level retired templates may remain in old projects but are not required.
 
-Kernel versions follow semantic versioning. Every release must bump
-`KERNEL_VERSION`, update its managed blocks and assets, and rerun init,
-migration, idempotency, and conflict tests. Schema changes are separate: add an
-explicit transformation to `STATE_MIGRATIONS` and bump `SCHEMA_VERSION`.
-Upgrades stop with a conflict if no complete schema migration path is
-registered; they never discard unknown project-state fields to make a new
-validator pass.
+## State mapping
 
-Every applied operation writes `.research-workflow.json` and a report under
-`research/machine/`. Existing changed files receive timestamped backups under
-`.research-workflow/backups/`. Apply is transactional across known targets: a
-write failure restores modified files and removes files created by that
-operation.
+Migration of a project without a reviewed mirror requires a separate proposal
+for claim status, necessary dependencies, scope, theorem targets, route/run
+identity, and evidence lineage. Keep canonical hashes unchanged until explicit
+human approval. A structural validation pass is never mathematical acceptance.
+Use `hydrate-run ... --proposal-only` only for a historical inventory; it never
+creates canonical evidence records or silently promotes inferred statuses.
 
-## State-mapping gate
+Version managed assets with KERNEL_VERSION. Register explicit project-state
+schema transformations in STATE_MIGRATIONS when that schema changes. Unknown
+fields and statuses must not be discarded to make validation pass.
 
-For migration, derive a candidate `project-state.json` from `STATE.md`, the
-proof ledger, proof map, route matrix, and accepted run decisions. Treat it as
-a proposal until the owner confirms claim statuses, dependency directions,
-route-rejection scopes, active run, and evidence lineage. Only then record the
-canonical hashes and mark migration ready.
+## Upgrading 3.0 to 3.1
+
+Install new tools, schemas, conditional templates and operational instructions
+through the same preview/transaction/conflict rules. New sessions use manifest
+1.3 and claim-bound review 1.1. Existing 1.2 manifests and 1.0 reviews retain
+their summary-bound semantics and frozen bytes; do not rewrite them or infer
+reviewed claim snapshots automatically. Project-state schema stays 2.1, so no
+mathematical state migration or owner approval is inferred from tool upgrades.
+Conditional checks/evaluations must not become new startup requirements.
+
+For an older project's first restart, compare STATE and its approved ledger
+with the actual manuscript series and dated review records. When useful,
+record the exact paths, review scope and unresolved discrepancies in the
+project-owned `research/current-work.md`. Keep this note out of canonical
+hashes. It can be corrected as files move without changing any claim status.
+Use the existing proposal path for a mathematical reconciliation.
+
+The validator reports a legacy `manifest.json` as a delivery when it has a
+textual `result`, integer `pages` and a `deliveries` object, with no research
+identity or evidence fields, task or transition sidecars, or canonical run
+reference. A research record that fails its schema or hash checks needs
+deliberate repair or evidence reconciliation. Do not invent missing hashes,
+outcomes or approvals.

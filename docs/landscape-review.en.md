@@ -1,5 +1,7 @@
 # Research workflow landscape and positioning
 
+> Historical assessment of the 2.7 workflow; current execution policy is in WORKFLOW.md (3.0).
+
 Reviewed **2026-10-30**. [中文](landscape-review.zh-CN.md).
 
 ## Scope and method

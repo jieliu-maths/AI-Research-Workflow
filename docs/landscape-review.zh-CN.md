@@ -1,5 +1,7 @@
 # 科研工作流调研与项目定位
 
+> Historical assessment of the 2.7 workflow; current execution policy is in WORKFLOW.md (3.0).
+
 调研日期：**2026-10-30**。[English](landscape-review.en.md)。
 
 ## 范围与证据

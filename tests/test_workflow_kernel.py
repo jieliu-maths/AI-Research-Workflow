@@ -99,6 +99,49 @@ class WorkflowKernelTests(unittest.TestCase):
             detected = workflowctl.detected_ids(target)
             self.assertEqual(detected["route_labels"], ["A", "B"])
 
+    def test_historical_delivery_manifest_is_excluded_but_research_stays_strict(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "project"
+            subprocess.run(
+                ["python3", str(ROOT / "tools/workflowctl.py"), "init", str(target),
+                 "--source", str(ROOT), "--apply"],
+                capture_output=True, text=True, check=True,
+            )
+            delivery = target / "runs/2026-01-01-R001/manifest.json"
+            delivery.parent.mkdir()
+            record = {"run": "R001", "result": "Draft reviewed within a limited scope.",
+                      "pages": 7, "deliveries": {"draft.tex": "historical record"}}
+            original = json.dumps(record).encode()
+            delivery.write_bytes(original)
+            command = ["python3", str(target / "tools/researchctl.py"), "validate"]
+            result = subprocess.run(command, text=True, capture_output=True, check=True)
+            self.assertIn("LEGACY_DELIVERY_MANIFEST", result.stdout)
+            self.assertEqual(delivery.read_bytes(), original)
+
+            malformed = target / "runs/2026-01-02-R002/manifest.json"
+            malformed.parent.mkdir()
+            malformed.write_text(json.dumps({**record, "run_id": "R002"}), encoding="utf-8")
+            result = subprocess.run(command, text=True, capture_output=True, check=False)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("MANIFEST_SCHEMA_RULE: runs/2026-01-02-R002", result.stdout)
+            self.assertEqual(result.stdout.count("LEGACY_DELIVERY_MANIFEST"), 1)
+
+            malformed.write_bytes(original)
+            state_path = target / "research/machine/project-state.json"
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            state["runs"].append({
+                "id": "R002", "status": "completed", "route_id": None,
+                "manifest": {
+                    "path": malformed.relative_to(target).as_posix(),
+                    "sha256": hashlib.sha256(original).hexdigest(),
+                },
+            })
+            state_path.write_text(json.dumps(state), encoding="utf-8")
+            result = subprocess.run(command, text=True, capture_output=True, check=False)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("MANIFEST_SCHEMA_RULE: runs/2026-01-02-R002", result.stdout)
+            self.assertEqual(result.stdout.count("LEGACY_DELIVERY_MANIFEST"), 1)
+
     def test_new_project_init_is_complete_and_idempotent(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             target = Path(temporary) / "new-project"
@@ -116,20 +159,20 @@ class WorkflowKernelTests(unittest.TestCase):
             self.assertTrue((target / "schemas/workspace-roles.schema.json").is_file())
             self.assertTrue((target / "research/machine/_template/workspace-roles.json").is_file())
             prompt_text = (target / "docs/research-workflow-prompts.md").read_text(encoding="utf-8")
-            self.assertIn("当前任务就是本项目的 Director", prompt_text)
-            self.assertIn("`0 Director`", prompt_text)
-            self.assertIn("`1 Researcher`", prompt_text)
-            self.assertIn("`2 Critic`", prompt_text)
             self.assertIn(str(ROOT), prompt_text)
             self.assertNotIn("<WORKFLOW_LIBRARY>", prompt_text)
-            self.assertIn("不得调用 spawn_agent", prompt_text)
+            self.assertNotIn("create_thread", prompt_text)
+            for retired in ("research/task_index.md", "research/proof_map.md", "research/research_log.md"):
+                self.assertFalse((target / retired).exists())
+            self.assertFalse((target / "research/machine/workspace-roles.json").exists())
             self.assertFalse((target / workflowctl.LIBRARY_MARKER_PATH).exists())
             config = json.loads((target / workflowctl.CONFIG_PATH).read_text(encoding="utf-8"))
             self.assertEqual(config["source_library_id"], workflowctl.LIBRARY_ID)
+            self.assertEqual(config["execution_mode"], "single_window")
             validation = subprocess.run(["python3", str(target / "tools/researchctl.py"), "validate"], text=True, capture_output=True, check=False)
             self.assertEqual(validation.returncode, 0, validation.stdout + validation.stderr)
 
-    def test_workspace_registry_requires_three_distinct_peer_tasks(self) -> None:
+    def test_historical_registry_diagnostics_do_not_require_peer_tasks(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             target = Path(temporary) / "new-project"
             init = subprocess.run(
@@ -161,10 +204,10 @@ class WorkflowKernelTests(unittest.TestCase):
                 ["python3", str(target / "tools/researchctl.py"), "validate"],
                 text=True, capture_output=True, check=False,
             )
-            self.assertEqual(validation.returncode, 1)
-            self.assertIn("WORKSPACE_ROLE_DISTINCT", validation.stdout)
+            self.assertEqual(validation.returncode, 0, validation.stdout + validation.stderr)
+            self.assertIn("LEGACY_WORKSPACE_ROLE_DISTINCT", validation.stdout)
 
-    def test_upgrade_migrates_legacy_role_registry_without_changing_task_ids(self) -> None:
+    def test_upgrade_preserves_historical_role_registry_without_activating_it(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             target = Path(temporary) / "role-upgrade"
             init = subprocess.run(
@@ -189,10 +232,7 @@ class WorkflowKernelTests(unittest.TestCase):
             )
             self.assertEqual(upgrade.returncode, 0, upgrade.stdout + upgrade.stderr)
             migrated = json.loads(actual.read_text(encoding="utf-8"))
-            self.assertEqual(migrated["schema_version"], "1.1")
-            self.assertEqual([item["thread_id"] for item in migrated["roles"]], [f"kept-task-{i}" for i in range(3)])
-            self.assertEqual([item["title"] for item in migrated["roles"]], ["0 Director", "1 Researcher", "2 Critic"])
-            self.assertEqual([item["is_current_task"] for item in migrated["roles"]], [True, False, False])
+            self.assertEqual(migrated, roles)
 
     def test_migrate_preserves_existing_mathematical_state_verbatim(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -262,7 +302,7 @@ class WorkflowKernelTests(unittest.TestCase):
             )
             self.assertEqual(init.returncode, 0, init.stdout + init.stderr)
             report = subprocess.run(
-                ["python3", str(target / "tools/researchctl.py"), "report"],
+                ["python3", str(target / "tools/researchctl.py"), "report", "--format", "pdf"],
                 text=True, capture_output=True, check=False,
             )
             self.assertEqual(report.returncode, 0, report.stdout + report.stderr)
@@ -295,40 +335,6 @@ class WorkflowKernelTests(unittest.TestCase):
         self.assertEqual(proposal["candidate_state"]["schema_version"], "2.1")
         self.assertEqual(proposal["candidate_state"]["snapshot"]["theorem_targets"], [])
 
-    def test_normal_review_response_is_mathematics_only(self) -> None:
-        protocol = (ROOT / "agents/protocol.md").read_text(encoding="utf-8")
-        director = (ROOT / "agents/director.md").read_text(encoding="utf-8")
-        review_template = (ROOT / "agents/mathematical-review-template.md").read_text(encoding="utf-8")
-        self.assertIn("Normal post-review and run-boundary responses are mathematics-only", protocol)
-        self.assertIn("chronology verified", director)
-        self.assertIn("section in the normal response to the owner", review_template)
-        self.assertIn("each new symbol's meaning", director)
-        self.assertIn("do not report baselines, control planes, hashes, compatibility", director)
-
-    def test_candidate_preflight_is_versioned_and_reusable(self) -> None:
-        workflow = (ROOT / "WORKFLOW.md").read_text(encoding="utf-8")
-        protocol = (ROOT / "agents/protocol.md").read_text(encoding="utf-8")
-        brief = (ROOT / "runs/_template/brief.md").read_text(encoding="utf-8")
-        task_brief = (ROOT / "runs/_template/task-brief.md").read_text(encoding="utf-8")
-        summary = (ROOT / "runs/_template/director-run-summary.md").read_text(encoding="utf-8")
-        prompts = (ROOT / "docs/research-workflow-prompts.md").read_text(encoding="utf-8")
-
-        self.assertIn("Candidate preflight before long derivations", workflow)
-        self.assertIn("Canonical topology", workflow)
-        self.assertIn("Exact operator calculus", workflow)
-        self.assertIn("Independence quotient", workflow)
-        self.assertIn("Mathematical candidate preflight", protocol)
-        self.assertIn("template_version: 2.4.0", brief)
-        self.assertIn("## Candidate preflight plan", brief)
-        for field in (
-            "candidate_class:", "canonical_topology:",
-            "quotient_dependencies:", "scaling_regime:",
-            "stress_tests:", "symbol_scope:",
-        ):
-            self.assertIn(field, task_brief)
-        self.assertIn("## Candidate scope and unexcluded alternatives", summary)
-        self.assertIn("Prompt D — operate one approved research run", prompts)
-
     def test_dashboard_has_persistent_bilingual_interface(self) -> None:
         template = (ROOT / "dashboard/template.html").read_text(encoding="utf-8")
         self.assertIn('content="2.1-mathematical-bilingual"', template)
@@ -347,7 +353,7 @@ class WorkflowKernelTests(unittest.TestCase):
         self.assertNotIn("'正式状态'", template)
         self.assertNotIn("'执行结果'", template)
         self.assertNotIn("'结构性问题'", template)
-        self.assertEqual(workflowctl.KERNEL_VERSION, "2.7.0")
+        self.assertEqual(workflowctl.KERNEL_VERSION, "3.1.0")
 
     @unittest.skipUnless((ROOT / "workflow").is_file(), "standalone source repository only")
     def test_standalone_source_is_project_neutral(self) -> None:
@@ -555,6 +561,267 @@ class WorkflowKernelTests(unittest.TestCase):
             self.assertEqual(bypass.returncode, 1)
             self.assertIn("ROUTE_REVIEW_BYPASSED", bypass.stdout)
 
+
+class SingleWindowTests(unittest.TestCase):
+    def init_project(self, target: Path) -> None:
+        result = subprocess.run(
+            ["python3", str(ROOT / "tools/workflowctl.py"), "init", str(target),
+             "--source", str(ROOT), "--project-name", "Single Window Test", "--apply"],
+            text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def validate(self, target: Path) -> subprocess.CompletedProcess:
+        return subprocess.run(["python3", str(target / "tools/researchctl.py"), "validate"],
+                              text=True, capture_output=True, check=False)
+
+    def save(self, path: Path, value: dict) -> dict[str, str]:
+        path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+        return self.ref(path)
+
+    def ref(self, path: Path) -> dict[str, str]:
+        # All fixtures belong to a project directly above its runs directory.
+        target = next(parent for parent in path.parents if (parent / ".research-workflow.json").is_file())
+        return {"path": str(path.relative_to(target)), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+
+    def session(self, target: Path) -> tuple[Path, dict]:
+        directory = target / "runs/R001"
+        directory.mkdir()
+        (directory / "brief.md").write_text("# Question\nA bounded teaching calculation; no route activation.\n")
+        (directory / "work.md").write_text("# Work\nExact finite calculation; the universal claim remains open.\n")
+        manifest = json.loads((target / "runs/_template/manifest.json").read_text())
+        manifest["schema_version"] = "1.2"
+        manifest["critical_review"] = None
+        manifest.update(run_id="R001", status="completed", brief=self.ref(directory / "brief.md"),
+                        summary=self.ref(directory / "work.md"), route_signal="not_applicable")
+        self.save(directory / "manifest.json", manifest)
+        return directory, manifest
+
+    def review(self, target: Path, directory: Path, manifest: dict) -> dict:
+        for name in ("review-question.md", "review-baseline.md", "review-assessment.md"):
+            (directory / name).write_text("# Synthetic independent review fixture: " + name + "\n")
+        review = json.loads((target / "runs/_template/review.json").read_text())
+        review["schema_version"] = "1.0"
+        for field in ("claim_id", "revision", "claim_record"):
+            review.pop(field, None)
+        review.update(run_id="R001", review_kind="independent", reviewer="synthetic reviewer context",
+                      baseline_frozen_before_candidate=True, verdict="survives_current_attacks")
+        for field, name in (("question", "review-question.md"), ("baseline", "review-baseline.md"),
+                            ("candidate", "work.md"), ("assessment", "review-assessment.md")):
+            review[field] = self.ref(directory / name)
+        manifest["critical_review"] = self.save(directory / "review.json", review)
+        self.save(directory / "manifest.json", manifest)
+        return review
+
+    def test_completed_local_research_needs_only_three_files_and_no_role_registry(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "project"
+            self.init_project(target)
+            directory, _ = self.session(target)
+            before = (target / "STATE.md").read_bytes()
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertNotIn("WORKSPACE_ROLES_MISSING", result.stdout)
+            self.assertNotIn("READABLE_REPORT_MISSING", result.stdout)
+            self.assertEqual({p.name for p in directory.iterdir()}, {"brief.md", "work.md", "manifest.json"})
+            self.assertEqual((target / "STATE.md").read_bytes(), before)
+
+    def test_key_review_rejects_missing_self_check_and_nonindependent_read_order(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "project"
+            self.init_project(target)
+            directory, manifest = self.session(target)
+            manifest["critical_review_required"] = True
+            self.save(directory / "manifest.json", manifest)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("CRITICAL_REVIEW_REQUIRED", result.stdout)
+            review = self.review(target, directory, manifest)
+            review["review_kind"] = "self_check"
+            manifest["critical_review"] = self.save(directory / "review.json", review)
+            self.save(directory / "manifest.json", manifest)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("CRITICAL_REVIEW_SELF_CHECK", result.stdout)
+            review["review_kind"] = "independent"
+            review["baseline_frozen_before_candidate"] = False
+            manifest["critical_review"] = self.save(directory / "review.json", review)
+            self.save(directory / "manifest.json", manifest)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("CRITICAL_REVIEW_ORDER", result.stdout)
+            review["baseline_frozen_before_candidate"] = True
+            manifest["critical_review"] = self.save(directory / "review.json", review)
+            self.save(directory / "manifest.json", manifest)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_decisive_support_requires_surviving_review_of_the_exact_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "project"
+            self.init_project(target)
+            directory, manifest = self.session(target)
+            manifest.update(route_id="route:synthetic", route_approval_reference="owner:synthetic", route_signal="decisive_support")
+            self.save(directory / "manifest.json", manifest)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("CRITICAL_REVIEW_REQUIRED", result.stdout)
+            review = self.review(target, directory, manifest)
+            review["verdict"] = "uncertain"
+            manifest["critical_review"] = self.save(directory / "review.json", review)
+            self.save(directory / "manifest.json", manifest)
+            self.assertIn("CRITICAL_REVIEW_UNRESOLVED", self.validate(target).stdout)
+            review["verdict"] = "survives_current_attacks"
+            manifest["critical_review"] = self.save(directory / "review.json", review)
+            self.save(directory / "manifest.json", manifest)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            # An updated summary cannot silently inherit the old review, even if its own hash is refreshed.
+            (directory / "repaired.md").write_text("# Substantively repaired candidate\n")
+            manifest["summary"] = self.ref(directory / "repaired.md")
+            self.save(directory / "manifest.json", manifest)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("CRITICAL_REVIEW_CANDIDATE", result.stdout)
+            # And tampering with an already frozen proof is still detected.
+            (directory / "work.md").write_text("# Changed after review\n")
+            self.assertIn("CRITICAL_REVIEW_CANDIDATE_DRIFT", self.validate(target).stdout)
+
+    def test_claim_changes_need_review_even_without_trigger_flag_and_still_need_owner_approval(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "project"
+            self.init_project(target)
+            directory, manifest = self.session(target)
+            transition = json.loads((target / "runs/_template/state-transition.json").read_text())
+            transition.update(run_id="R001", proposal_id="ST-R001-S0-S1", state_to="S1")
+            transition["changes"]["claims"] = [{"id": "P001", "status": "verified"}]
+            manifest["state_transition"] = self.save(directory / "state-transition.json", transition)
+            self.save(directory / "manifest.json", manifest)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("CRITICAL_REVIEW_REQUIRED", result.stdout)
+            self.review(target, directory, manifest)
+            self.assertIn("TRANSITION_EVIDENCE_REQUIRED", self.validate(target).stdout)
+            task = json.loads((target / "runs/_template/Txxx.json").read_text())
+            task.update(run_id="R001", task_id="T001", status="returned", verdict="supports",
+                        dispatch=self.ref(directory / "brief.md"), artifact=self.ref(directory / "work.md"),
+                        derivation_roots=["synthetic exact definitions"])
+            manifest["task_records"] = [self.save(directory / "T001.json", task)]
+            transition["evidence_records"] = ["T001"]
+            transition["status"] = "owner_approved"
+            manifest["state_transition"] = self.save(directory / "state-transition.json", transition)
+            self.save(directory / "manifest.json", manifest)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("TRANSITION_APPROVAL", result.stdout)
+            transition["owner_approval_reference"] = "owner:synthetic-test-only"
+            manifest["state_transition"] = self.save(directory / "state-transition.json", transition)
+            self.save(directory / "manifest.json", manifest)
+            before = (target / "STATE.md").read_bytes()
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual((target / "STATE.md").read_bytes(), before)
+            self.assertEqual(json.loads((target / "research/machine/project-state.json").read_text())["claims"], [])
+            # An arbitrary JSON file cannot impersonate a typed evidence record.
+            manifest["task_records"] = [self.save(directory / "untyped.json", task)]
+            transition["evidence_records"] = ["untyped"]
+            manifest["state_transition"] = self.save(directory / "state-transition.json", transition)
+            self.save(directory / "manifest.json", manifest)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("TRANSITION_EVIDENCE_LINK", result.stdout)
+
+    def test_default_report_needs_no_pdf_engine_and_does_not_require_optional_records(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "project"
+            self.init_project(target)
+            for output_format in ("md", "tex"):
+                command = ["python3", str(target / "tools/researchctl.py"), "report"]
+                if output_format == "tex":
+                    command += ["--format", "tex"]
+                result = subprocess.run(command, text=True, capture_output=True, check=False)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertTrue((target / "report" / ("project-summary." + output_format)).is_file())
+            self.assertFalse((target / "report/project-summary.pdf").exists())
+            self.assertEqual(self.validate(target).returncode, 0)
+
+    def test_open_planning_claim_does_not_require_an_independent_proof_audit(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "project"
+            self.init_project(target)
+            directory, manifest = self.session(target)
+            transition = json.loads((target / "runs/_template/state-transition.json").read_text())
+            transition.update(run_id="R001", proposal_id="ST-R001-S0-S1", state_to="S1")
+            transition["changes"]["claims"] = [{"id": "P001", "status": "open"}]
+            # A differently named transition must still be read and checked.
+            manifest["state_transition"] = self.save(directory / "planning-proposal.json", transition)
+            self.save(directory / "manifest.json", manifest)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            transition["changes"]["claims"][0]["status"] = "verified"
+            manifest["state_transition"] = self.save(directory / "planning-proposal.json", transition)
+            self.save(directory / "manifest.json", manifest)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("CRITICAL_REVIEW_REQUIRED", result.stdout)
+
+    def test_single_window_route_review_cannot_be_bypassed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "project"
+            self.init_project(target)
+            original, base = self.session(target)
+            for number in range(1, 5):
+                directory = target / "runs" / f"R{number:03d}"
+                if number > 1:
+                    directory.mkdir()
+                    (directory / "brief.md").write_bytes((original / "brief.md").read_bytes())
+                    (directory / "work.md").write_bytes((original / "work.md").read_bytes())
+                manifest = dict(base, run_id=f"R{number:03d}", route_id="route:synthetic",
+                                route_approval_reference="owner:synthetic", route_signal="null_result",
+                                brief=self.ref(directory / "brief.md"), summary=self.ref(directory / "work.md"))
+                self.save(directory / "manifest.json", manifest)
+                if number == 3:
+                    result = self.validate(target)
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertIn("ROUTE_REVIEW_DUE", result.stdout)
+            result = self.validate(target)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("ROUTE_REVIEW_BYPASSED", result.stdout)
+            self.assertFalse(any(path for path in (target / "runs").rglob("orchestration.json") if "_template" not in path.parts))
+
+    def test_upgrade_conflict_preserves_local_protocol_and_frozen_run(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "project"
+            self.init_project(target)
+            self.session(target)
+            protocol = target / "WORKFLOW.md"
+            protocol.write_text(protocol.read_text() + "\nProject-specific mathematical guardrail.\n")
+            before = {str(path.relative_to(target)): path.read_bytes() for path in target.rglob("*") if path.is_file()}
+            result = subprocess.run(
+                ["python3", str(ROOT / "tools/workflowctl.py"), "upgrade", str(target), "--source", str(ROOT), "--apply"],
+                text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn("CONFLICT", result.stdout)
+            self.assertEqual(before, {str(path.relative_to(target)): path.read_bytes() for path in target.rglob("*") if path.is_file()})
+
+    def test_untracked_session_template_is_not_overwritten_on_upgrade(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "project"
+            self.init_project(target)
+            config_path = target / ".research-workflow.json"
+            config = json.loads(config_path.read_text())
+            config["managed_files"].pop("runs/_template/work.md")
+            self.save(config_path, config)
+            template = target / "runs/_template/work.md"
+            template.write_text("# Local template predating kernel ownership\n")
+            before = template.read_bytes()
+            result = subprocess.run(
+                ["python3", str(ROOT / "tools/workflowctl.py"), "upgrade", str(target), "--source", str(ROOT), "--apply"],
+                text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(template.read_bytes(), before)
 
 if __name__ == "__main__":
     unittest.main()

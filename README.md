@@ -8,7 +8,7 @@ and human-approved mathematical state.**
 [Landscape review](docs/landscape-review.en.md) · [AI4S experimental profile](profiles/ai4s/README.md) ·
 [MIT License](LICENSE)
 
-Version **2.7.0**. A reusable workflow kernel for researchers who use AI to
+Version **3.1.0**. A reusable workflow kernel for researchers who use AI to
 explore difficult mathematical questions over many sessions. It keeps theorem
 targets, proof dependencies, derivation roots, failed candidates, and unresolved
 gaps visible. A generated argument or a successful computation does not silently
@@ -18,16 +18,18 @@ become an accepted theorem.
 
 - **Proof-ledger first:** separate the theorem target, proof obligations, routes,
   executions, and evidence. Expose strict dependencies and circularity risks.
-- **Independent review:** Director, Researcher, and Critic are separate visible
-  top-level tasks sharing the project. Critic develops a baseline before reading
-  the construction; different role names alone do not guarantee independence.
+- **One research window:** continuous reasoning and calculations within an
+  approved scope, with a short STATE entry and detailed evidence read on demand.
+- **Key independent review:** review key identities, core estimates, claimed gap
+  closures, and formal promotions. Freeze an independent baseline before proof
+  disclosure; self-checks and different role names do not establish independence.
 - **Scoped learning:** preserve failed candidates and exactly what they exclude.
   Review an unproductive route before investing in another construction run.
 - **Owner decisions:** target/route changes, claim promotion, global notation,
   and manuscript transfer require explicit human approval.
 - **Reusable records:** versioned templates, transactional installation,
-  conflict-preserving upgrades, bilingual proof-map dashboard, and consolidated
-  Markdown/LaTeX/PDF reading copies in installed mathematical projects.
+  conflict-preserving upgrades, bilingual proof-map dashboard, and optional
+  generated reading copies. No per-role dispatch or duplicate run reports.
 - **Portable evidence:** inspect external proof/computation/experiment bundles
   without granting their outputs authority over canonical state.
 
@@ -41,12 +43,11 @@ rates or research productivity relative to alternatives.
 - Python **3.10+**, with only the standard library for the kernel and demos.
 - Bash and Git for the commands below. macOS and Linux are CI targets;
   Windows users can use WSL, which is not yet a separate CI target.
-- For the supported role workflow: a Codex desktop saved project and the ability
-  to create three separate visible local tasks. The installer creates files,
-  not app tasks. Other hosts can read the protocols, but no equivalent host
-  adapter is shipped or validated.
-- Optional: XeLaTeX for PDF reading copies; without it, the report command
-  preserves Markdown/LaTeX and reports that PDF generation was not completed.
+- One research chat with access to the project files and command execution.
+  Independent review needs a fresh, suitably isolated context or a human reviewer
+  when triggered; no permanent role tasks or workspace registry are required.
+- Optional: XeLaTeX only for `report --format pdf`. Default Markdown reporting
+  works without a typesetting engine.
 - External provers/models/services require their own setup, access, and licenses.
   No API key is needed for the offline demos or self-check.
 
@@ -79,10 +80,19 @@ Preview a new AI4Math project, then apply after reviewing its name and target:
 Open the target directory as a saved project in Codex. Use the
 [English prompts](docs/research-workflow-prompts.en.md) or
 [Chinese prompts](docs/research-workflow-prompts.md). Start with your tentative
-question, known literature, constraints, and intended result. The current chat
-is `0 Director`; only after you approve the exact target and route, create
-`1 Researcher` and `2 Critic` as independent peers. A scaffold starts at S0
-with no approved theorem, claim, or route.
+question, known literature, constraints, and intended result. Approve the exact
+target, main route, hypotheses, and bounded exploration scope, then continue in
+the same window. A scaffold starts at S0 with no approved theorem, claim, or route.
+Do not create or rename role chats to satisfy the workflow.
+
+## Mathematical feedback (3.1)
+
+Meaning/quantifier and source-applicability checks, executable candidate tests,
+bounded compute escalation, reusable claim/proof revisions, information-gain
+route review, and frozen-task/blind-review comparison tools are now available.
+Ordinary sessions still need three files. These mechanisms preserve human
+approval and do not establish mathematical correctness or measured productivity.
+See [the feedback guide](docs/research-feedback.md).
 
 ## Everyday use
 
@@ -97,12 +107,19 @@ python3 tools/researchctl.py report
 ```
 
 `P001` is an illustrative claim identifier; replace it with a registered claim.
-Open `dashboard/index.html` for the bilingual proof map. Generate reading copies
-only after the owner-approved mathematical record is synchronized. This source
+An ordinary session uses only `brief.md`, `work.md`, and `manifest.json` from
+`runs/_template/`; do not copy all conditional templates. The work note includes
+the closing mathematical summary. Add indexed evidence, independent review,
+state proposals, or route review only when needed. Freeze submitted artifacts
+and preserve corrections separately.
+
+Open `dashboard/index.html` for the bilingual proof map. `report` generates an
+optional Markdown reading copy of the approved record; use `--format tex` or
+`--format pdf` for additional exports. This source
 repository intentionally has no project state: use `./workflow self-check` here.
 
 A validator pass means record consistency, not mathematical correctness. A
-Critic verdict of “survives current attacks” is not a proof. A numerical result,
+review verdict of “survives current attacks” is not a proof. A numerical result,
 finite check, or submitted formal artifact must retain its exact scope. See
 [the evidence contract](docs/evidence-bundles.md) and [governing workflow](WORKFLOW.md).
 

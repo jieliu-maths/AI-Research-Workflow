@@ -1,62 +1,23 @@
-# Route Evidence Review — route:slug
+# Route evidence review
 
-```yaml
-template_version: 2.4.0
-review_id: RR-route-slug-001
-route_id: route:slug
-reviewed_runs: []
-status: due | in_review | owner_gate | closed
-machine_record: runs/Rxxx/route-review.json
-```
+## Original route thesis and exact obstruction
 
-This is a mathematical consolidation and recommendation packet. It cannot
-approve continuation, modification, suspension, rejection, or replacement of
-the route.
-
-## Original route thesis and promised proof gate
-
-## Evidence obtained across reviewed runs
-
-### Decisive support
-
-### Partial support
-
-### Null results
-
-### Precisely scoped obstructions
-
-For each obstruction, list the exact candidate class, canonical topology,
-parameter regime, quotient dependencies, decisive test family, locally
-repairable variants, and unexcluded alternatives.
-
-## Repeated derivation roots and independence audit
-
-## What changed in the mathematical picture
-
-## Remaining bottleneck
-
-## Cheapest discriminating test
-
-## Researcher synthesis
+## Existing evidence, information gained, and smallest surviving gap
 
 ## Systematic literature refresh driven by the obstruction
 
-State the exact mathematical questions used in the search. For every primary
-source, identify the precise theorem and hypotheses, the mechanism it adds,
-and its mismatch with the present problem. Compare any new or repaired route
-with the current route; an unstructured bibliography is not sufficient.
+Record search questions, primary sources and exact locations, mechanism
+comparison, and any newly justified alternatives before a recommendation.
+For each load-bearing source, state the scope actually read, which step it
+supplies, which hypotheses match, and what remains unverified.
 
-## Independent Critic assessment
+## Independent assessment
 
-Audit both the mathematical diagnosis and the literature comparison.
+## Repeated candidates/roots and why more computation would add information
 
-## Director recommendation
-
-Choose one proposal and state its exact scope: continue unchanged, repair,
-materially narrow, branch for comparison, suspend, reject a scoped route, or
-refresh the literature.
+## Recommendation and cheapest discriminating test
 
 ## Owner decision required
 
-No construction run follows until the owner records an explicit decision and
-approval reference.
+Continuation, repair, narrowing, suspension, rejection, and main-route changes
+remain pending until explicit approval. No permanent role handoffs are needed.

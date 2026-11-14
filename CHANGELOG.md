@@ -1,5 +1,49 @@
 # Changelog
 
+## 3.1.0
+
+- Add a noncanonical recovery note convention for parallel proof series and
+  working drafts. Recognize historical manuscript delivery records without
+  admitting them as research evidence or weakening research-manifest checks.
+- Extend existing preflight prompts for exact calculation targets,
+  coordinate transfer, scoped counterexamples, and source provenance.
+- Add intended-question/quantifier/regime/topology and exact source-applicability
+  checks before long derivations, separate from correctness and novelty claims.
+- Add explicit opt-in frozen evaluator execution, raw receipts, timeout and input
+  integrity checks, plus rational-polynomial and scale teaching examples.
+- Record bounded compute escalation only when used; unknown cost stays unknown.
+- Add manifest 1.3, provisional claim/proof revisions and review 1.1, independent
+  of mutable work summaries. Bind formal changes to exact reviewed claim IDs.
+- Detect substantive prerequisite revisions transitively without changing
+  canonical status; add a read-only affected-claim query.
+- Trigger earlier route review after two declared no-information sessions;
+  preserve three-session/structural-failure limits and owner decisions.
+- Add frozen input packets, label-blind human grading and separate quality,
+  error, reproducibility, time and cost comparison metrics. Demonstrations test
+  mechanics only; no research-effectiveness result is claimed.
+- Preserve historical manifests/reviews, project-state schema 2.1, raw evidence,
+  mathematical guardrails and human approval during transactional upgrades.
+
+## 3.0.0
+
+- Make one research window the default; remove permanent three-role task setup,
+  role-registry prerequisites, dispatch/return loops, and duplicated run reports.
+- Use brief.md, work.md (including the mathematical summary), and manifest.json
+  for ordinary sessions. Evidence, review, transition, and route-review files
+  are conditional. Move retired templates into a legacy reference directory.
+- Add manifest schema 1.2 and independent review records tied to frozen question,
+  baseline, candidate, and assessment. Self-checks cannot clear a key evidence
+  gate; formal claim changes still require review and explicit human approval.
+- Reduce the new-project skeleton and recover from short approved STATE first.
+  Keep source proofs, hypotheses, quantifiers, derivation roots, scoped failures,
+  strict dependencies, candidate preflight, and obstruction-driven route review.
+- Make Markdown reading copies optional; LaTeX/PDF are explicit report exports.
+- Preserve historical manifests, task records, role registries, mathematical
+  state, and instantiated runs. Adopt exact v2.7.0 protocol documents as managed
+  assets; locally edited protocols conflict instead of losing guardrails.
+- Keep project-state schema 2.1 and existing mathematical status semantics.
+  This is a workflow refactor, not measured evidence of better theorem solving.
+
 ## 2.7.0
 
 - Position the public release around AI4Math with portable English/Chinese

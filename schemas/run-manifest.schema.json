@@ -4,31 +4,502 @@
   "title": "Run manifest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "run_id", "route_id", "state_in", "status", "brief", "route_approval_reference", "task_records", "director_summary", "state_transition"],
+  "required": [
+    "schema_version",
+    "run_id",
+    "route_id",
+    "state_in",
+    "status",
+    "brief",
+    "route_approval_reference",
+    "task_records",
+    "state_transition"
+  ],
   "properties": {
-    "schema_version": { "enum": ["1.0", "1.1"] },
-    "run_id": { "type": "string", "pattern": "^R[0-9]+$" },
-    "route_id": { "oneOf": [{ "type": "string", "pattern": "^route:[A-Za-z0-9][A-Za-z0-9._-]*$" }, { "type": "null" }] },
-    "state_in": { "type": "string", "pattern": "^S[0-9]+$" },
-    "status": { "enum": ["planned", "running", "gated", "completed", "aborted"] },
-    "brief": { "$ref": "#/$defs/maybeHashedFile" },
-    "route_approval_reference": { "type": "string", "minLength": 1 },
-    "task_records": { "type": "array", "items": { "$ref": "#/$defs/hashedFile" } },
-    "director_summary": { "oneOf": [{ "$ref": "#/$defs/hashedFile" }, { "type": "null" }] },
-    "state_transition": { "oneOf": [{ "$ref": "#/$defs/hashedFile" }, { "type": "null" }] },
-    "orchestration": { "$ref": "#/$defs/pathOnly" },
-    "route_signal": { "enum": ["not_assessed", "decisive_support", "partial_support", "null_result", "scoped_obstruction", "structural_failure", "not_applicable"] },
-    "route_review": { "oneOf": [{ "$ref": "#/$defs/pathOnly" }, { "type": "null" }] }
+    "schema_version": {
+      "enum": [
+        "1.0",
+        "1.1",
+        "1.2",
+        "1.3"
+      ]
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^R[0-9]+$"
+    },
+    "route_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^route:[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "state_in": {
+      "type": "string",
+      "pattern": "^S[0-9]+$"
+    },
+    "status": {
+      "enum": [
+        "planned",
+        "running",
+        "gated",
+        "completed",
+        "aborted"
+      ]
+    },
+    "brief": {
+      "$ref": "#/$defs/maybeHashedFile"
+    },
+    "route_approval_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_records": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/hashedFile"
+      }
+    },
+    "director_summary": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/hashedFile"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "state_transition": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/hashedFile"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "orchestration": {
+      "$ref": "#/$defs/pathOnly"
+    },
+    "route_signal": {
+      "enum": [
+        "not_assessed",
+        "decisive_support",
+        "partial_support",
+        "null_result",
+        "scoped_obstruction",
+        "structural_failure",
+        "not_applicable"
+      ]
+    },
+    "route_review": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/pathOnly"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "summary": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/hashedFile"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "critical_review_required": {
+      "type": "boolean"
+    },
+    "critical_review": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/hashedFile"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "meaning_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "note"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "pending",
+            "matched",
+            "mismatch"
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "explanation",
+        "candidate_class",
+        "obstruction_key",
+        "derivation_roots",
+        "repeat_reason"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "not_assessed",
+            "none",
+            "gap_closed",
+            "new_exclusion",
+            "new_external_result",
+            "new_distinction"
+          ]
+        },
+        "explanation": {
+          "type": "string"
+        },
+        "candidate_class": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "obstruction_key": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "derivation_roots": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "repeat_reason": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "claim_records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "critical_reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "compute_steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "action",
+          "reason",
+          "expected_information",
+          "stop_condition",
+          "max_seconds",
+          "max_cost_usd",
+          "status",
+          "elapsed_seconds",
+          "cost_usd",
+          "outcome"
+        ],
+        "properties": {
+          "action": {
+            "enum": [
+              "increase_reasoning",
+              "change_model",
+              "independent_candidates",
+              "external_verifier"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected_information": {
+            "type": "string",
+            "minLength": 1
+          },
+          "stop_condition": {
+            "type": "string",
+            "minLength": 1
+          },
+          "max_seconds": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "max_cost_usd": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "planned",
+              "completed",
+              "stopped"
+            ]
+          },
+          "elapsed_seconds": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cost_usd": {
+            "oneOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome": {
+            "type": "string"
+          }
+        }
+      }
+    }
   },
   "allOf": [
     {
-      "if": { "properties": { "schema_version": { "const": "1.1" } } },
-      "then": { "required": ["orchestration", "route_signal", "route_review"] }
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.1"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "orchestration",
+          "route_signal",
+          "route_review"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "enum": [
+              "1.0",
+              "1.1"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "director_summary"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.2"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "summary",
+          "route_signal",
+          "route_review",
+          "critical_review_required",
+          "critical_review"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.3"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "summary",
+          "route_signal",
+          "route_review",
+          "critical_review_required",
+          "meaning_audit",
+          "progress"
+        ]
+      }
     }
   ],
   "$defs": {
-    "hashedFile": { "type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": { "path": { "type": "string", "minLength": 1 }, "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" } } },
-    "maybeHashedFile": { "type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": { "path": { "type": "string", "minLength": 1 }, "sha256": { "oneOf": [{ "type": "string", "pattern": "^[0-9a-f]{64}$" }, { "type": "null" }] } } },
-    "pathOnly": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "minLength": 1 } } }
+    "hashedFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "maybeHashedFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "pathOnly": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
   }
 }

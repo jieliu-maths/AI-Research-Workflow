@@ -1,16 +1,7 @@
-# Runtime configuration for research roles
+# Runtime configuration
 
-Recommended starting configuration. A project owner may approve different
-models or reasoning effort for a particular project or task:
-
-| Role | Model | Reasoning effort | Speed |
-| --- | --- | --- | --- |
-| Research Director | `gpt-5.6-sol` | `high` | standard |
-| Researcher | `gpt-5.6-sol` | `xhigh` | standard |
-| Critic / Falsifier | `gpt-5.6-sol` | `xhigh` | standard |
-| Experimenter | `gpt-5.6-terra` | `high` | standard; fast only for mechanical iterations |
-
-Use `max` only for a sharply defined, stubborn core derivation or final proof
-audit. Luna may be used for formatting or bulk mechanical work, not for
-adjudicating a central theorem claim. A dispatch-time model/effort override
-implements this configuration when a task's saved setting differs.
+Use the current window's owner-selected model and settings. Do not override
+models, reasoning effort, create role tasks, or maintain a runtime registry
+merely to satisfy this workflow. Independent review is triggered by the
+mathematical importance of the result; changing a model or role name alone is
+not evidence of independence. Legacy runtime records are historical only.

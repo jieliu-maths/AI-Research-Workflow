@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.1",
+  "run_id": "R000",
+  "review_kind": "self_check",
+  "reviewer": "identify reviewer or context; do not infer independence",
+  "question": {
+    "path": "runs/R000/review-question.md",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "baseline": {
+    "path": "runs/R000/review-baseline.md",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "candidate": {
+    "path": "runs/R000/P000-v1-proof.md",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "assessment": {
+    "path": "runs/R000/review-assessment.md",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "baseline_frozen_before_candidate": false,
+  "derivation_roots": [],
+  "overlapping_roots": [],
+  "verdict": "uncertain",
+  "claim_id": "P000",
+  "revision": "v1",
+  "claim_record": {
+    "path": "runs/R000/P000-v1.json",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

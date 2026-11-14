@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.research-workflow/claim-evidence.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "claim_id",
+    "revision",
+    "status",
+    "target",
+    "statement",
+    "quantifiers",
+    "parameter_regime",
+    "function_space",
+    "hypotheses",
+    "excluded_weakenings",
+    "meaning_audit",
+    "prior_work",
+    "novelty",
+    "proof",
+    "derivation_roots",
+    "depends_on",
+    "supersedes",
+    "change_kind"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "claim_id": {
+      "type": "string",
+      "pattern": "^P[0-9]+$"
+    },
+    "revision": {
+      "type": "string",
+      "pattern": "^v[1-9][0-9]*$"
+    },
+    "status": {
+      "const": "provisional_evidence"
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 1
+    },
+    "quantifiers": {
+      "type": "string",
+      "minLength": 1
+    },
+    "parameter_regime": {
+      "type": "string",
+      "minLength": 1
+    },
+    "function_space": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hypotheses": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "excluded_weakenings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "meaning_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "note"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "pending",
+            "matched",
+            "mismatch"
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "prior_work": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "citation",
+          "location",
+          "hypothesis_match",
+          "remaining_difference"
+        ],
+        "properties": {
+          "citation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hypothesis_match": {
+            "type": "string",
+            "minLength": 1
+          },
+          "remaining_difference": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "novelty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "note"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "unassessed",
+            "known_result",
+            "specialization",
+            "new_argument",
+            "new_result"
+          ]
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "derivation_roots": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "depends_on": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id",
+          "revision",
+          "record"
+        ],
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "pattern": "^P[0-9]+$"
+          },
+          "revision": {
+            "type": "string",
+            "pattern": "^v[1-9][0-9]*$"
+          },
+          "record": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "supersedes": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "change_kind": {
+      "enum": [
+        "initial",
+        "editorial",
+        "substantive"
+      ]
+    }
+  }
+}

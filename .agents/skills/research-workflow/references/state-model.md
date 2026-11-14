@@ -2,7 +2,7 @@
 
 `research/machine/project-state.json` is a machine-readable mirror of the
 human-approved state. It does not outrank `STATE.md` or
-`research/proof_ledger.md` in kernel 2.1.
+`research/proof_ledger.md` in kernel 3.1.
 
 ## Separate axes
 
@@ -53,3 +53,61 @@ does not mean that a mathematical statement is true.
 `project-state.proposal.json` has its own schema and an explicit
 `unresolved_mappings` ledger. Its dashboard is rendered separately as
 `dashboard/proposal-preview.html` with a non-canonical warning.
+
+## Historical single-window sessions (kernel 3.0, unchanged)
+
+Manifest v1.2 needs a frozen brief, optional indexed evidence, a summary link
+(which may be work.md itself), route signal, and declared key-review requirement.
+It has no mandatory role registry or orchestration. An ordinary session needs
+only brief.md, work.md, and manifest.json. No transition exists until a formal
+change is proposed. Txxx.json is for submitted durable evidence, not every step.
+
+A critical review has separate hashed question, independent baseline, candidate,
+and comparison artifacts. It records baseline-before-disclosure, reviewer/context,
+derivation roots and overlap, and verdict. Independence is an auditable declared
+process, not something a schema proves. Self-check never clears the independent
+gate; decisive support and formal claim/manuscript changes require a surviving
+independent review tied to the exact final work artifact. Owner approval remains
+a separate gate; a review verdict never promotes canonical state.
+
+Historical manifests, tasks, and role registries are checked when present but
+are not rewritten. No project-state schema migration is needed for the new
+execution model. Optional reports are generated views, not additional authority.
+
+For v1.2 formal transition proposals, evidence_records contains local Txxx IDs
+indexed by the manifest's hashed task_records. Each cited record names the exact
+reviewed final work and nonempty derivation roots. Pending or unindexed evidence
+cannot support a promotion. Explicit provisional planning entries may use status
+(e.g. open) or after.status without triggering a proof audit; canonical changes
+still require owner approval. Unknown change forms are reviewed conservatively.
+Historical role-registry diagnostics are warnings, never research prerequisites.
+
+## Feedback sessions (kernel 3.1)
+
+New manifests use 1.3. Three ordinary files remain sufficient; meaning_audit and
+progress record correspondence and information gained, with conditional arrays
+claim_records, critical_reviews, checks and compute_steps. No canonical claim
+status semantics change; project-state schema remains 2.1.
+
+claim-evidence 1.0 freezes a provisional claim ID/revision, target reference,
+statement, quantifiers, domain/topology, hypotheses, excluded weakenings, source
+comparison, meaning/novelty standing, proof hash, roots and versioned prerequisite
+references. Review 1.1 binds both that record and its exact proof, not summary.
+A changed statement needs new review even when proof bytes are identical.
+Substantive supersedes links make transitive old-version dependents pending
+recheck for future formal use. Canonical status is never silently changed.
+
+Formal transition evidence remains local Txxx IDs in the manifest index, with
+proof_items covering changed claim IDs and artifacts equal to their reviewed
+proof snapshots. Unrelated reviews cannot cover another claim. Open planning
+entries retain the lighter approval-only path.
+
+check-result references its frozen plan and candidate, with scope, raw output,
+actual exit/time/timeout and integrity. Metadata cannot certify checker truth.
+compute_steps record bounded intentions/observations; only local check timeouts
+are enforced automatically. Unknown costs remain null.
+
+progress is a declared mathematical delta, not a similarity/novelty oracle. Two
+consecutive none entries trigger route review earlier than the existing three-
+session limit. Human approval and fresh primary literature remain mandatory
+for the post-review route decision. No old run or review is rewritten.
